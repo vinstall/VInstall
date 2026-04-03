@@ -1,0 +1,4 @@
+-keep class com.vinstall.alwiz.parser.** { *; }
+-keep class com.vinstall.alwiz.receiver.** { *; }
+-keepattributes *Annotation*
+-dontwarn okhttp3.**
