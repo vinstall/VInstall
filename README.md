@@ -1,6 +1,6 @@
 # VInstall
 
-A minimal Android application for installing APK, XAPK, APKS, APKM, APKv, and ZIP packages, with a built-in app manager, backup, and uninstaller.
+A minimal Android application for installing APK, XAPK, APKS, APKM, APKV, and ZIP packages, with a built-in app manager, backup, and uninstaller.
 
 ## Features
 
@@ -14,10 +14,10 @@ Supports six package formats:
 | XAPK   | APK with OBB expansion data or split APKs bundle |
 | APKS   | Split APKs archive (SAI format) |
 | APKM   | Split APKs archive (APKMirror format) |
-| APKv   | Encrypted or plain split APKs archive (custom format, see [APKv_FORMAT.md](https://github.com/vinstall/apkv-doc/blob/main/README.md)) |
+| APKV   | Encrypted or plain split APKs archive (custom format, see [APKv_FORMAT.md](https://github.com/vinstall/apkv-spec/blob/main/README.md)) |
 | ZIP    | Generic ZIP archive containing APK split files |
 
-For split APK formats (XAPK, APKS, APKM, APKv, ZIP), individual splits can be selected or deselected before installation. APKM files marked as DRM-protected are rejected automatically. APKv files support optional password-based encryption.
+For split APK formats (XAPK, APKS, APKM, APKV, ZIP), individual splits can be selected or deselected before installation. APKM files marked as DRM-protected are rejected automatically. APKv files support optional password-based encryption.
 
 ### Install Modes
 
@@ -95,7 +95,7 @@ gradle wrapper --gradle-version=8.4
 
 ## APKv Format
 
-VInstall introduces **APKv**, a custom container format for archiving and distributing Android application packages. It supports plain and password-encrypted payloads, embeds an application icon, and includes a structured JSON manifest. The full specification is available in [APKv_FORMAT.md](https://github.com/vinstall/apkv-doc/blob/main/README.md).
+VInstall introduces **APKV**, a custom container format for archiving and distributing Android application packages. It supports plain and password-encrypted payloads, embeds an application icon, and includes a structured JSON manifest. The full specification is available in [APKv_FORMAT.md](https://github.com/vinstall/apkv-spec/blob/main/README.md).
 
 ## License
 
