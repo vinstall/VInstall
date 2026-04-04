@@ -19,11 +19,18 @@ android {
     signingConfigs {
         release {
             if (System.getenv("KEYSTORE_BASE64")) {
-                def keystoreFile = file("${buildDir}/release.jks")
-                storeFile keystoreFile
+                storeFile file("${buildDir}/release.jks")
                 storePassword System.getenv("STORE_PASSWORD")
                 keyAlias System.getenv("KEY_ALIAS")
                 keyPassword System.getenv("KEY_PASSWORD")
+            } else {
+                def props = new Properties()
+                def localProps = rootProject.file("local.properties")
+                if (localProps.exists()) props.load(localProps.newInputStream())
+                storeFile props["STORE_FILE"] ? file(props["STORE_FILE"]) : null
+                storePassword props["STORE_PASSWORD"]
+                keyAlias props["KEY_ALIAS"]
+                keyPassword props["KEY_PASSWORD"]
             }
         }
     }
