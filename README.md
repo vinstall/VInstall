@@ -17,7 +17,7 @@ Supports six package formats:
 | APKV   | Encrypted or plain split APKs archive (custom format, see [APKv_FORMAT.md](https://github.com/vinstall/apkv-spec/blob/main/README.md)) |
 | ZIP    | Generic ZIP archive containing APK split files |
 
-For split APK formats (XAPK, APKS, APKM, APKV, ZIP), individual splits can be selected or deselected before installation. APKM files marked as DRM-protected are rejected automatically. APKv files support optional password-based encryption.
+For split APK formats (XAPK, APKS, APKM, APKV, ZIP), individual splits can be selected or deselected before installation. APKM files marked as DRM-protected are rejected automatically. APKV files support optional password-based encryption.
 
 ### Install Modes
 
@@ -33,7 +33,7 @@ Browse all installed user apps with the ability to:
 
 - View app details: version, SDK range, install and update dates, APK size, data directory, split count, and requested permissions
 - Launch or open the system app info page
-- Backup the app as an `.apks` archive
+- Export the app as an `.apkv` archive
 - Uninstall the app (supports Normal, Root, and Shizuku modes)
 - Compute and copy the APK hash (MD5, SHA-1, SHA-256)
 
