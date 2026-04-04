@@ -129,7 +129,6 @@ data class ApkvHeader(
             val obj = JSONObject(json)
 
             val labels = obj.optJSONObject("labels")?.let { labelsObj ->
-                // Normalize keys to lowercase per §11.1
                 labelsObj.keys().asSequence().associateBy(
                     keySelector = { it.lowercase() },
                     valueTransform = { labelsObj.getString(it) }

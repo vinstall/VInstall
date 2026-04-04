@@ -16,6 +16,7 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
+import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
 object ApkvInstaller {
@@ -75,7 +76,11 @@ object ApkvInstaller {
                         if (password == null) return@use null
                         val blob = zip.readBytes()
                         val decrypted = ApkvCrypto.tryDecrypt(blob, password) ?: return@use null
-                        return@use ApkvManifest.fromJson(decrypted.toString(Charsets.UTF_8))
+                        return try {
+                            ApkvManifest.fromJson(decrypted.toString(Charsets.UTF_8))
+                        } finally {
+                            decrypted.fill(0)
+                        }
                     }
                 }
                 zip.closeEntry()
@@ -120,7 +125,8 @@ object ApkvInstaller {
         uri: Uri,
         password: String? = null,
         onStep: (String) -> Unit,
-        selectedSplits: List<String>? = null
+        selectedSplits: List<String>? = null,
+        onChecksumMismatch: (suspend (mismatches: List<String>) -> Boolean)? = null
     ): Result<Unit> {
         return try {
             val encrypted = isEncrypted(context, uri)
@@ -149,11 +155,44 @@ object ApkvInstaller {
                 return Result.failure(Exception("No APK splits found in archive"))
             }
 
+            val manifest = readManifest(context, uri, password)
+            val checksums = manifest?.checksums
+            if (!checksums.isNullOrEmpty()) {
+                onStep("Verifying checksums...")
+                val mismatches = verifyChecksums(apkFiles, checksums)
+                if (mismatches.isNotEmpty()) {
+                    val shouldContinue = onChecksumMismatch?.invoke(mismatches) ?: false
+                    if (!shouldContinue) {
+                        return Result.failure(Exception("Installation cancelled: checksum mismatch"))
+                    }
+                }
+            }
+
             onStep("Installing splits...")
             SplitInstaller.installSplits(context, apkFiles, selectedSplits)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun verifyChecksums(apkFiles: List<File>, checksums: Map<String, String>): List<String> {
+        val mismatches = mutableListOf<String>()
+        for (file in apkFiles) {
+            val declared = checksums[file.name] ?: continue
+            if (!declared.startsWith("sha256:")) continue
+            val actual = MessageDigest.getInstance("SHA-256").let { md ->
+                FileInputStream(file).use { fis ->
+                    val buf = ByteArray(65_536)
+                    var read: Int
+                    while (fis.read(buf).also { read = it } != -1) md.update(buf, 0, read)
+                }
+                md.digest().joinToString("") { "%02x".format(it) }
+            }
+            if (actual != declared.substring(7)) {
+                mismatches.add(file.name)
+            }
+        }
+        return mismatches
     }
 
     private fun extractPlain(context: Context, uri: Uri, outDir: File, onStep: (String) -> Unit) {
