@@ -17,9 +17,9 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.OutputStream
+import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.Cipher
-import javax.crypto.CipherInputStream
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
@@ -73,6 +73,12 @@ object ApkvExporter {
             val splitNames = apkFiles.map { it.name }
             val encrypted = password != null
 
+            onStep("Computing checksums...")
+            val checksums = computeChecksums(apkFiles)
+            val totalSize = apkFiles.sumOf { it.length() }
+
+            val exportedAt = System.currentTimeMillis()
+
             val manifest = ApkvManifest(
                 packageName = appInfo.packageName,
                 versionName = appInfo.versionName,
@@ -81,12 +87,18 @@ object ApkvExporter {
                 isSplit = appInfo.isSplitApp,
                 splits = splitNames,
                 encrypted = encrypted,
-                hasIcon = hasIcon
+                hasIcon = hasIcon,
+                exportedAt = exportedAt,
+                minSdkVersion = appInfo.minSdk,
+                targetSdkVersion = appInfo.targetSdk,
+                checksums = checksums,
+                totalSize = totalSize,
+                permissions = appInfo.requestedPermissions.takeIf { it.isNotEmpty() }
             )
 
             if (encrypted) {
                 onStep("Encrypting package...")
-                writeEncrypted(apkFiles, manifest, appInfo, outFile, password!!, iconBytes, onStep)
+                writeEncrypted(apkFiles, manifest, appInfo, outFile, password!!, iconBytes, exportedAt, onStep)
             } else {
                 onStep("Archiving package...")
                 writePlain(apkFiles, manifest, outFile, iconBytes, onStep)
@@ -107,6 +119,21 @@ object ApkvExporter {
             File(path).takeIf { it.exists() }?.let { files.add(it) }
         }
         return files
+    }
+
+    private fun computeChecksums(apkFiles: List<File>): Map<String, String> {
+        return apkFiles.associate { file ->
+            val digest = MessageDigest.getInstance("SHA-256")
+            val buffer = ByteArray(STREAM_BUFFER_SIZE)
+            FileInputStream(file).buffered(STREAM_BUFFER_SIZE).use { fis ->
+                var read: Int
+                while (fis.read(buffer).also { read = it } != -1) {
+                    digest.update(buffer, 0, read)
+                }
+            }
+            val hex = digest.digest().joinToString("") { "%02x".format(it) }
+            file.name to "sha256:$hex"
+        }
     }
 
     private fun drawableToWebP(drawable: Drawable): ByteArray? {
@@ -179,14 +206,17 @@ object ApkvExporter {
         outFile: File,
         password: String,
         iconBytes: ByteArray?,
+        exportedAt: Long,
         onStep: (String) -> Unit
     ) {
         val header = ApkvHeader(
             packageName = appInfo.packageName,
             versionName = appInfo.versionName,
             label = appInfo.label,
+            labels = manifest.labels,
             encrypted = true,
-            hasIcon = iconBytes != null
+            hasIcon = iconBytes != null,
+            exportedAt = exportedAt
         )
 
         onStep("Encrypting manifest...")
@@ -264,9 +294,13 @@ object ApkvExporter {
         out.write(iv)
 
         FileInputStream(inputFile).use { fis ->
-            CipherInputStream(fis, cipher).use { cis ->
-                cis.copyTo(out, STREAM_BUFFER_SIZE)
+            val buffer = ByteArray(STREAM_BUFFER_SIZE)
+            var read: Int
+            while (fis.read(buffer).also { read = it } != -1) {
+                val chunk = cipher.update(buffer, 0, read)
+                if (chunk != null) out.write(chunk)
             }
+            out.write(cipher.doFinal())
         }
     }
 }
