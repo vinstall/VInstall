@@ -14,7 +14,6 @@ import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
@@ -273,8 +272,7 @@ object ApkvInstaller {
                 val salt = ByteArray(ApkvCrypto.SALT_BYTE_LENGTH).also { dis.readFully(it) }
                 val iv   = ByteArray(ApkvCrypto.IV_BYTE_LENGTH).also   { dis.readFully(it) }
 
-                val keySpec = PBEKeySpec(password.toCharArray(), salt, ApkvCrypto.KDF_ITERATIONS, ApkvCrypto.KEY_BIT_LENGTH)
-                val rawKey = ApkvCrypto.createKeyFactory().generateSecret(keySpec).encoded
+                val rawKey = ApkvCrypto.deriveKeyBytes(password, salt)
                 val key     = SecretKeySpec(rawKey, "AES")
 
                 val cipher = Cipher.getInstance(ApkvCrypto.CIPHER_ALGORITHM)

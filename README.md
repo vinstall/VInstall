@@ -126,14 +126,14 @@ Licensed under the [GNU General Public License v3.0](LICENSE).
 
 This project uses the following open-source libraries:
 
-| Library | Author | License |
-|---------|--------|---------|
-| [AndroidX](https://developer.android.com/jetpack/androidx) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| [Material Components for Android](https://github.com/material-components/material-components-android) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| [Kotlin Coroutines](https://github.com/Kotlin/kotlinx.coroutines) | JetBrains | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| [Gson](https://github.com/google/gson) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| [Shizuku](https://github.com/RikkaApps/Shizuku) | RikkaApps | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
-| [Bouncy Castle](https://www.bouncycastle.org/) | The Legion of the Bouncy Castle | [MIT-style](https://www.bouncycastle.org/licence.html) |
+| Library | Author | License | Notes |
+|---------|--------|---------|-------|
+| [AndroidX](https://developer.android.com/jetpack/androidx) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
+| [Material Components for Android](https://github.com/material-components/material-components-android) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
+| [Kotlin Coroutines](https://github.com/Kotlin/kotlinx.coroutines) | JetBrains | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
+| [Gson](https://github.com/google/gson) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
+| [Shizuku](https://github.com/RikkaApps/Shizuku) | RikkaApps | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
+| [Bouncy Castle](https://www.bouncycastle.org/) | The Legion of the Bouncy Castle | [MIT-style](https://www.bouncycastle.org/licence.html) | Removed in v0.4.2-hotfix2 |
 
 ## Author
 

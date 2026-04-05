@@ -77,7 +77,6 @@ dependencies {
     implementation 'androidx.fragment:fragment-ktx:1.8.8'
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    implementation 'org.bouncycastle:bcprov-jdk15to18:1.78.1'
 
     def shizuku_version = '13.1.5'
     implementation "dev.rikka.shizuku:api:$shizuku_version"

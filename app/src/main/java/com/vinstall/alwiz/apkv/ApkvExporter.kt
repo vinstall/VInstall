@@ -22,7 +22,6 @@ import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -283,8 +282,7 @@ object ApkvExporter {
         val salt = ByteArray(ApkvCrypto.SALT_BYTE_LENGTH).also { SecureRandom().nextBytes(it) }
         val iv   = ByteArray(ApkvCrypto.IV_BYTE_LENGTH).also   { SecureRandom().nextBytes(it) }
 
-        val spec = PBEKeySpec(password.toCharArray(), salt, ApkvCrypto.KDF_ITERATIONS, ApkvCrypto.KEY_BIT_LENGTH)
-        val raw = ApkvCrypto.createKeyFactory().generateSecret(spec).encoded
+        val raw = ApkvCrypto.deriveKeyBytes(password, salt)
         val key  = SecretKeySpec(raw, KEY_ALGORITHM)
 
         val cipher = Cipher.getInstance(ApkvCrypto.CIPHER_ALGORITHM)
