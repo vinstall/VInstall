@@ -14,10 +14,10 @@ Supports six package formats:
 | XAPK   | APK with OBB expansion data or split APKs bundle |
 | APKS   | Split APKs archive (SAI format) |
 | APKM   | Split APKs archive (APKMirror format) |
-| APKV   | Encrypted or plain split APKs archive (custom format, see [APKv_FORMAT.md](https://github.com/vinstall/apkv-spec/blob/main/README.md)) |
+| APKV   | Encrypted or plain split APKs archive (custom format, see [APKV spec](https://github.com/vinstall/apkv-spec/blob/main/README.md)) |
 | ZIP    | Generic ZIP archive containing APK split files |
 
-For split APK formats (XAPK, APKS, APKM, APKV, ZIP), individual splits can be selected or deselected before installation. APKM files marked as DRM-protected are rejected automatically. APKV files support optional password-based encryption.
+For split APK formats (XAPK, APKS, APKM, APKV, ZIP), individual splits can be selected or deselected before installation. APKM files marked as DRM-protected are rejected automatically. APKV files support optional password-based encryption and integrity verification via SHA-256 checksums.
 
 ### Install Modes
 
@@ -114,13 +114,26 @@ The `gradle/wrapper/gradle-wrapper.jar` file is included in the repository. Howe
 gradle wrapper --gradle-version=9.4.1
 ```
 
-## APKv Format
+## APKV Format
 
-VInstall introduces **APKV**, a custom container format for archiving and distributing Android application packages. It supports plain and password-encrypted payloads, embeds an application icon, and includes a structured JSON manifest. The full specification is available in [APKv_FORMAT.md](https://github.com/vinstall/apkv-spec/blob/main/README.md).
+VInstall introduces **APKV**, a custom container format for archiving and distributing Android application packages. It supports plain and password-encrypted payloads, embeds an application icon, includes integrity checksums per APK file, and includes a structured JSON manifest. The full specification is available in the [APKV spec](https://github.com/vinstall/apkv-spec/blob/main/README.md) and [apkv-cli](https://github.com/vinstall/apkv-cli).
 
 ## License
 
 Licensed under the [GNU General Public License v3.0](LICENSE).
+
+## Credits
+
+This project uses the following open-source libraries:
+
+| Library | Author | License |
+|---------|--------|---------|
+| [AndroidX](https://developer.android.com/jetpack/androidx) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| [Material Components for Android](https://github.com/material-components/material-components-android) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| [Kotlin Coroutines](https://github.com/Kotlin/kotlinx.coroutines) | JetBrains | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| [Gson](https://github.com/google/gson) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| [Shizuku](https://github.com/RikkaApps/Shizuku) | RikkaApps | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+| [Bouncy Castle](https://www.bouncycastle.org/) | The Legion of the Bouncy Castle | [MIT-style](https://www.bouncycastle.org/licence.html) |
 
 ## Author
 
