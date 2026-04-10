@@ -17,7 +17,7 @@ Supports six package formats:
 | APKV   | Encrypted or plain split APKs archive (custom format, see [APKV spec](https://github.com/vinstall/apkv-spec/blob/main/README.md)) |
 | ZIP    | Generic ZIP archive containing APK split files |
 
-For split APK formats (XAPK, APKS, APKM, APKV, ZIP), individual splits can be selected or deselected before installation. APKM files marked as DRM-protected are rejected automatically. APKV files support optional password-based encryption and integrity verification via SHA-256 checksums.
+For split APK formats (XAPK, APKS, APKM, APKV, ZIP), individual splits can be selected or deselected before installation. APKV files support optional password-based encryption and integrity verification via SHA-256 checksums.
 
 ### Install Modes
 
