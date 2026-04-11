@@ -40,8 +40,11 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
+    
+    private var shizukuPermissionPending = false
 
     private val shizukuPermissionListener = Shizuku.OnRequestPermissionResultListener { _, result ->
+        shizukuPermissionPending = false
         val granted = result == PackageManager.PERMISSION_GRANTED
         val msg = if (granted) getString(R.string.shizuku_granted) else getString(R.string.shizuku_denied)
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
@@ -358,7 +361,8 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
-        if (mode == InstallMode.SHIZUKU && shizukuAvail && !shizukuGranted) {
+        if (mode == InstallMode.SHIZUKU && shizukuAvail && !shizukuGranted && !shizukuPermissionPending) {
+            shizukuPermissionPending = true
             ShizukuHelper.requestPermission(shizukuPermissionListener)
         }
     }

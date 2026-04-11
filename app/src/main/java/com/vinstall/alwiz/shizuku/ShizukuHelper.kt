@@ -45,9 +45,19 @@ object ShizukuHelper {
         }
     }
 
-    fun requestPermission(listener: Shizuku.OnRequestPermissionResultListener) {
-        Shizuku.addRequestPermissionResultListener(listener)
-        Shizuku.requestPermission(REQUEST_CODE)
+    fun requestPermission(listener: Shizuku.OnRequestPermissionResultListener): Boolean {
+        if (!isAvailable()) return false
+        if (Shizuku.isPreV11()) return false
+
+        return try {
+            try { Shizuku.removeRequestPermissionResultListener(listener) } catch (_: Exception) {}
+            Shizuku.addRequestPermissionResultListener(listener)
+            Shizuku.requestPermission(REQUEST_CODE)
+            true
+        } catch (e: Exception) {
+            try { Shizuku.removeRequestPermissionResultListener(listener) } catch (_: Exception) {}
+            false
+        }
     }
 
     fun removePermissionListener(listener: Shizuku.OnRequestPermissionResultListener) {

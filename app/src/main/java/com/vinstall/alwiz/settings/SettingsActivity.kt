@@ -1,7 +1,13 @@
 package com.vinstall.alwiz.settings
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Bundle
 import android.view.MenuItem
+import android.widget.ScrollView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -9,6 +15,7 @@ import com.vinstall.alwiz.App
 import com.vinstall.alwiz.R
 import com.vinstall.alwiz.databinding.ActivitySettingsBinding
 import com.vinstall.alwiz.shizuku.ShizukuHelper
+import com.vinstall.alwiz.util.CrashHandler
 import com.vinstall.alwiz.util.DebugLog
 import com.vinstall.alwiz.root.RootHelper
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +37,11 @@ class SettingsActivity : AppCompatActivity() {
 
         loadCurrentSettings()
         setupListeners()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshCrashLogStatus()
     }
 
     private fun loadCurrentSettings() {
@@ -57,6 +69,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         refreshStatusLabels()
+        refreshCrashLogStatus()
     }
 
     private fun updateModeUI(mode: InstallMode) {
@@ -92,6 +105,17 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun refreshCrashLogStatus() {
+        val count = CrashHandler.crashLogEntryCount(this)
+        val hasLog = count > 0
+        binding.textCrashLogStatus.text = if (hasLog)
+            getString(R.string.crash_log_has_entries, count)
+        else
+            getString(R.string.crash_log_empty)
+        binding.btnViewCrashLog.isEnabled = hasLog
+        binding.btnClearCrashLog.isEnabled = hasLog
+    }
+
     private fun setupListeners() {
         binding.radioGroupMode.setOnCheckedChangeListener { _, checkedId ->
             val mode = when (checkedId) {
@@ -120,6 +144,50 @@ class SettingsActivity : AppCompatActivity() {
         binding.layoutTheme.setOnClickListener {
             showThemeDialog()
         }
+
+        binding.btnViewCrashLog.setOnClickListener {
+            val log = CrashHandler.readCrashLogTail(this)
+            if (log.isNullOrBlank()) {
+                Toast.makeText(this, getString(R.string.crash_log_empty), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            showCrashLogDialog(log)
+        }
+
+        binding.btnClearCrashLog.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.crash_log_clear_title))
+                .setMessage(getString(R.string.crash_log_clear_confirm))
+                .setPositiveButton(getString(R.string.crash_log_clear_yes)) { _, _ ->
+                    CrashHandler.clearCrashLog(this)
+                    refreshCrashLogStatus()
+                    Toast.makeText(this, getString(R.string.crash_log_cleared), Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show()
+        }
+    }
+
+    private fun showCrashLogDialog(log: String) {
+        val tv = TextView(this).apply {
+            text = log
+            textSize = 10.5f
+            setPadding(32, 24, 32, 24)
+            setTextIsSelectable(true)
+            typeface = android.graphics.Typeface.MONOSPACE
+        }
+        val scroll = ScrollView(this).apply { addView(tv) }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.crash_log_title))
+            .setView(scroll)
+            .setPositiveButton(getString(R.string.crash_log_copy)) { _, _ ->
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("VInstall Crash Log", log))
+                Toast.makeText(this, getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(getString(R.string.crash_log_close), null)
+            .show()
     }
 
     private fun showThemeDialog() {

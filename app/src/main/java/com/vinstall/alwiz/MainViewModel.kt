@@ -50,7 +50,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun onFileSelected(uri: Uri) {
         val context = getApplication<Application>()
 
-        // FIX #1: Cancel loading sebelumnya sebelum mulai yang baru
         fileLoadingJob?.cancel()
 
         fileLoadingJob = viewModelScope.launch(Dispatchers.IO) {
@@ -252,8 +251,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val msg = result.exceptionOrNull()?.message ?: "Unknown error"
                 DebugLog.e("MainViewModel", "Install failed: $msg")
                 when (msg) {
-                    "DRM protected" ->
-                        _state.value = InstallState.Error("This APKM file is DRM-protected and cannot be installed.")
                     ApkvInstaller.ERROR_WRONG_PASSWORD ->
                         _state.value = InstallState.Error("Incorrect password.")
                     ApkvInstaller.ERROR_PASSWORD_REQUIRED ->

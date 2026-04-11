@@ -20,8 +20,7 @@ object ApkmInstaller {
                 it.deleteRecursively()
                 it.mkdirs()
             }
-            val isDrmProtected = extractAndCheck(context, uri, cacheDir, onStep)
-            if (isDrmProtected) return Result.failure(Exception("DRM protected"))
+            extractSplits(context, uri, cacheDir, onStep)
             val apkFiles = cacheDir.listFiles { f -> f.name.endsWith(".apk") }?.toList()
                 ?: emptyList()
             if (apkFiles.isEmpty()) return Result.failure(Exception("No APK splits found in APKM"))
@@ -48,43 +47,33 @@ object ApkmInstaller {
         return splits
     }
 
-    private fun extractAndCheck(
+    private fun extractSplits(
         context: Context,
         uri: Uri,
         outDir: File,
         onStep: (String) -> Unit
-    ): Boolean {
-        var isDrm = false
+    ) {
         val totalSize = FileUtil.getFileSize(context, uri).coerceAtLeast(1L)
         var extractedBytes = 0L
-        val stream = FileUtil.openStream(context, uri) ?: return false
+        val stream = FileUtil.openStream(context, uri) ?: return
         ZipInputStream(stream.buffered(FileUtil.BUFFER_SIZE)).use { zip ->
             var entry = zip.nextEntry
             while (entry != null) {
-                when {
-                    entry.name == "info.json" -> {
-                        val text = zip.readBytes().toString(Charsets.UTF_8)
-                        if (text.contains("\"is_drm\":true") || text.contains("\"is_drm\": true")) {
-                            isDrm = true
+                if (!entry.isDirectory && entry.name.endsWith(".apk")) {
+                    val fileName = File(entry.name).name
+                    val out = File(outDir, fileName)
+                    out.outputStream().buffered(FileUtil.BUFFER_SIZE).use { outStream ->
+                        FileUtil.copyWithProgress(zip, outStream, entry.size.coerceAtLeast(1L)) { pct ->
+                            onStep("Extracting $fileName… $pct%")
                         }
                     }
-                    !entry.isDirectory && entry.name.endsWith(".apk") -> {
-                        val fileName = File(entry.name).name
-                        val out = File(outDir, fileName)
-                        out.outputStream().buffered(FileUtil.BUFFER_SIZE).use { outStream ->
-                            FileUtil.copyWithProgress(zip, outStream, entry.size.coerceAtLeast(1L)) { pct ->
-                                onStep("Extracting $fileName… $pct%")
-                            }
-                        }
-                        extractedBytes += out.length()
-                        val totalPct = ((extractedBytes * 100) / totalSize).coerceIn(0, 100)
-                        onStep("Extracting splits… $totalPct%")
-                    }
+                    extractedBytes += out.length()
+                    val totalPct = ((extractedBytes * 100) / totalSize).coerceIn(0, 100)
+                    onStep("Extracting splits… $totalPct%")
                 }
                 zip.closeEntry()
                 entry = zip.nextEntry
             }
         }
-        return isDrm
     }
 }
