@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="24dp"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
     android:paddingTop="8dp"
     android:paddingBottom="8dp">
 
@@ -30,13 +31,13 @@
                 android:id="@+id/text_app_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+                android:textAppearance="@style/TextAppearance.VInstall.TitleMedium" />
 
             <TextView
                 android:id="@+id/text_package_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginTop="2dp" />
 
@@ -44,7 +45,7 @@
                 android:id="@+id/text_version_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+                android:textAppearance="@style/TextAppearance.VInstall.LabelMedium"
                 android:textColor="?attr/colorPrimary"
                 android:layout_marginTop="4dp" />
 
@@ -52,7 +53,7 @@
                 android:id="@+id/text_sdk_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                android:textAppearance="@style/TextAppearance.VInstall.LabelSmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginTop="2dp" />
 
@@ -71,7 +72,7 @@
             android:id="@+id/text_progress_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+            android:textAppearance="@style/TextAppearance.VInstall.BodyMedium"
             android:layout_marginBottom="8dp" />
 
         <com.google.android.material.progressindicator.LinearProgressIndicator

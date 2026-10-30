@@ -56,7 +56,7 @@ data class ApkvManifest(
             val obj = JSONObject(json)
 
             val format = obj.optString("format", "")
-            require(format == "apkv") { "Invalid APKv manifest: expected format=\"apkv\", got \"$format\"" }
+            require(format == "apkv") { "Invalid APKV manifest: expected format=\"apkv\", got \"$format\"" }
 
             val arr = obj.getJSONArray("splits")
             val splits = (0 until arr.length()).map { arr.getString(it) }

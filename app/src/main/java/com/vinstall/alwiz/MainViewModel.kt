@@ -51,11 +51,41 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _queueItems = MutableStateFlow<List<QueueItem>>(emptyList())
     val queueItems: StateFlow<List<QueueItem>> = _queueItems
 
+    private val _queueActive = MutableStateFlow(false)
+    val queueActive: StateFlow<Boolean> = _queueActive
+
+    private val _currentFile = MutableStateFlow<InstallState.FileSelected?>(null)
+    val currentFile: StateFlow<InstallState.FileSelected?> = _currentFile
+
+    init {
+        viewModelScope.launch {
+            _state.collect { s ->
+                when (s) {
+                    is InstallState.FileSelected -> _currentFile.value = s
+                    is InstallState.FileLoading,
+                    is InstallState.PasswordRequired,
+                    is InstallState.Idle -> _currentFile.value = null
+                    else -> {}
+                }
+            }
+        }
+    }
+
     private var isProcessingQueue = false
     private var currentInstallJob: Job? = null
     private var fileLoadingJob: Job? = null
     private var queueMetadataJob: Job? = null
     private var installStartTime: Long = 0L
+
+    private fun autoClearCache() {
+        val context = getApplication<Application>()
+        if (AppSettings.isAutoClearCache(context)) FileUtil.clearCache(context)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { autoClearCache() }
+    }
 
     fun canExportCurrentFile(): Boolean {
         val current = _state.value as? InstallState.FileSelected ?: return false
@@ -64,9 +94,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onFileSelected(uri: Uri) {
         val context = getApplication<Application>()
+        queueMetadataJob?.cancel()
+        queueMetadataJob = null
+        _queueItems.value = emptyList()
+        _queueActive.value = false
         fileLoadingJob?.cancel()
         fileLoadingJob = viewModelScope.launch(Dispatchers.IO) {
             _state.value = InstallState.FileLoading
+            autoClearCache()
             val name = FileUtil.getFileName(context, uri)
             val format = PackageFormat.fromFileName(name)
             DebugLog.i("MainViewModel", "File selected: $name format=$format")
@@ -177,12 +212,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun loadSplitsIfNeeded() {
-        val current = _state.value as? InstallState.FileSelected ?: return
+    suspend fun ensureSplitsLoaded() {
+        val current = (_state.value as? InstallState.FileSelected) ?: _currentFile.value ?: return
         if (!current.hasSplits || _availableSplits.value.isNotEmpty()) return
         val context = getApplication<Application>()
-        viewModelScope.launch(Dispatchers.IO) {
-            val splits = when (current.format) {
+        val splits = withContext(Dispatchers.IO) {
+            when (current.format) {
                 PackageFormat.APKS -> ApksInstaller.listSplits(context, current.uri)
                 PackageFormat.APKM -> ApkmInstaller.listSplits(context, current.uri)
                 PackageFormat.XAPK -> XapkInstaller.listSplits(context, current.uri)
@@ -190,9 +225,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 PackageFormat.APKV -> ApkvInstaller.listSplits(context, current.uri, current.apkvPassword)
                 else -> emptyList()
             }
-            _availableSplits.value = splits
-            _selectedSplits.value = splits
         }
+        _availableSplits.value = splits
+        _selectedSplits.value = splits
     }
 
     fun toggleSplit(splitName: String, selected: Boolean) {
@@ -217,11 +252,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             NotificationHelper.postInstallCancelled(context, "", "Installation cancelled by user.")
             _state.value = InstallState.Cancelled("Installation cancelled by user.")
             DebugLog.i("MainViewModel", "Install cancelled by user")
+            viewModelScope.launch(Dispatchers.IO) { autoClearCache() }
         }
     }
 
     fun install() {
-        val current = _state.value as? InstallState.FileSelected ?: return
+        val active = _state.value
+        if (active is InstallState.Installing || active is InstallState.Analyzing) return
+        val current = (active as? InstallState.FileSelected) ?: _currentFile.value ?: return
         val splits = _selectedSplits.value.takeIf { it.isNotEmpty() }
         currentInstallJob = viewModelScope.launch(Dispatchers.IO) {
             performInstall(current, splits)
@@ -230,8 +268,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun buildQueueItems(uris: List<Uri>) {
         queueMetadataJob?.cancel()
+        _queueItems.value = emptyList()
+        _queueActive.value = true
         queueMetadataJob = viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>()
+            autoClearCache()
 
             val placeholders = uris.map { uri ->
                 val name = FileUtil.getFileName(context, uri)
@@ -294,9 +335,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
             for (i in items.indices) {
                 try {
-                    val hash = FileUtil.computeHash(context, items[i].uri)
+                    val itemUri = items[i].uri
+                    val hash = FileUtil.computeHash(context, itemUri)
                     items[i] = items[i].copy(sha256 = hash)
-                    _queueItems.value = items.toList()
+                    val latest = _queueItems.value.toMutableList()
+                    val latestIdx = latest.indexOfFirst { it.uri == itemUri }
+                    if (latestIdx >= 0) {
+                        latest[latestIdx] = latest[latestIdx].copy(sha256 = hash)
+                        _queueItems.value = latest
+                    }
                 } catch (e: Exception) {
                     DebugLog.e("MainViewModel", "buildQueueItems hash failed for ${items[i].displayName}: ${e.message}")
                 }
@@ -328,6 +375,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             } finally {
                 isProcessingQueue = false
                 _batchProgress.value = null
+                _queueItems.value = emptyList()
+                _queueActive.value = false
+                autoClearCache()
             }
             _state.value = InstallState.Idle
         }
@@ -338,10 +388,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val context = getApplication<Application>()
             val valid = ApkvInstaller.verifyPassword(context, uri, password)
             if (valid) {
+                val iconBytes = ApkvInstaller.readIcon(context, uri, password)
+                val appIcon = if (iconBytes != null) {
+                    android.graphics.BitmapFactory.decodeByteArray(iconBytes, 0, iconBytes.size)
+                } else {
+                    MetadataReader.readFromApkv(context, uri, password).appIcon
+                }
                 val current = _queueItems.value.toMutableList()
                 val idx = current.indexOfFirst { it.uri == uri }
                 if (idx >= 0) {
-                    current[idx] = current[idx].copy(apkvPassword = password, isEncryptedApkv = false)
+                    current[idx] = current[idx].copy(
+                        apkvPassword = password,
+                        isEncryptedApkv = false,
+                        appIcon = appIcon ?: current[idx].appIcon
+                    )
                     _queueItems.value = current
                 }
             }
@@ -504,7 +564,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     _state.value = InstallState.Error(msg)
             }
             recordHistory(context, fileState, HistoryStatus.FAILED, msg)
-            if (AppSettings.isClearCacheAfterInstall(context)) FileUtil.clearCache(context)
+            autoClearCache()
             return
         }
 
@@ -520,7 +580,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 "If you cancelled the install dialog, please try again."
             )
             recordHistory(context, fileState, HistoryStatus.FAILED, "Installation timed out")
-            if (AppSettings.isClearCacheAfterInstall(context)) FileUtil.clearCache(context)
+            autoClearCache()
             return
         }
 
@@ -552,7 +612,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 InstallState.Error("Unknown install result")
             }
         }
-        if (AppSettings.isClearCacheAfterInstall(context)) FileUtil.clearCache(context)
+        autoClearCache()
     }
 
     private fun recordHistory(
@@ -582,13 +642,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         queueMetadataJob?.cancel()
         queueMetadataJob = null
         _queueItems.value = emptyList()
+        _queueActive.value = false
         fileLoadingJob?.cancel()
         fileLoadingJob = null
         currentInstallJob?.cancel()
         currentInstallJob = null
         isProcessingQueue = false
         _batchProgress.value = null
-        FileUtil.clearCache(getApplication<Application>())
+        autoClearCache()
         _availableSplits.value = emptyList()
         _selectedSplits.value = emptyList()
         _state.value = InstallState.Idle

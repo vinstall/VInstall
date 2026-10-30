@@ -5,7 +5,7 @@ enum class PackageFormat(val extension: String, val label: String) {
     XAPK(".xapk", "XAPK"),
     APKS(".apks", "APKS"),
     APKM(".apkm", "APKM"),
-    APKV(".apkv", "APKv"),
+    APKV(".apkv", "APKV"),
     ZIP(".zip", "ZIP"),
     UNKNOWN("", "Unknown");
 

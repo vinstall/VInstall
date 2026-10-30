@@ -296,7 +296,7 @@ object ApkvInstaller {
                 && magic[2] == 0x03.toByte()
                 && magic[3] == 0x04.toByte()
             if (!isValidZip) {
-                com.vinstall.alwiz.util.DebugLog.e("ApkvInstaller", "streamDecryptFile: ZIP magic check failed — wrong password or corrupt payload")
+                com.vinstall.alwiz.util.DebugLog.e("ApkvInstaller", "streamDecryptFile: ZIP magic check failed, wrong password or corrupt payload")
                 return false
             }
 

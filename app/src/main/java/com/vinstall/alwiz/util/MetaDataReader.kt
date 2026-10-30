@@ -297,7 +297,7 @@ object MetadataReader {
                 }
 
                 if (iconBitmap == null) {
-                    DebugLog.d("MetadataReader", "XAPK icon.png null — trying base APK fallback")
+                    DebugLog.d("MetadataReader", "XAPK icon.png null, trying base APK fallback")
                     val baseApkEntry = manifest?.splitApks
                         ?.firstOrNull { it.id == "base" }
                         ?.file
@@ -588,7 +588,7 @@ object MetadataReader {
             }
 
             if (appIcon == null) {
-                DebugLog.d("MetadataReader", "PM icon null — trying zip fallback for $apkPath")
+                DebugLog.d("MetadataReader", "PM icon null, trying zip fallback for $apkPath")
                 appIcon = extractIconFromApkZip(apkPath)
             }
 

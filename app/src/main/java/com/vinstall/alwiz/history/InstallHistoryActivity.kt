@@ -1,24 +1,26 @@
 package com.vinstall.alwiz.history
 
 import android.os.Bundle
+import android.view.Menu
 import android.view.MenuItem
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.vinstall.alwiz.R
 import com.vinstall.alwiz.databinding.ActivityInstallHistoryBinding
 import com.vinstall.alwiz.model.HistoryStatus
 import com.vinstall.alwiz.model.InstallHistoryEntry
-import com.vinstall.alwiz.settings.AppSettings
 import com.vinstall.alwiz.settings.DialogHelper
-import com.vinstall.alwiz.settings.DialogStyle
+import com.vinstall.alwiz.ui.FloatingNav
+import com.vinstall.alwiz.ui.applySystemBarInsets
+import com.vinstall.alwiz.ui.bindFloatingNav
 import com.vinstall.alwiz.util.FileUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,61 +32,77 @@ class InstallHistoryActivity : AppCompatActivity() {
     private val entries = mutableListOf<InstallHistoryEntry>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityInstallHistoryBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.applySystemBarInsets()
 
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        bindFloatingNav(binding.floatingNav, FloatingNav.Tab.LOG)
         supportActionBar?.title = getString(R.string.history_title)
 
         adapter = InstallHistoryAdapter(
             entries = entries,
             onItemClick = { entry -> showDetailDialog(entry) },
-            onDeleteClick = { entry, position -> deleteEntry(entry, position) }
+            onDeleteClick = { entry -> deleteEntry(entry) }
         )
 
         binding.recyclerHistory.layoutManager = LinearLayoutManager(this)
         binding.recyclerHistory.adapter = adapter
 
-        binding.btnClearHistory.setOnClickListener {
-            DialogHelper.showConfirmation(
-                activity = this,
-                title = getString(R.string.history_clear_title),
-                message = getString(R.string.history_clear_confirm),
-                positiveLabel = getString(R.string.history_clear_yes),
-                negativeLabel = getString(R.string.cancel),
-                isDangerous = true,
-                onConfirm = {
-                    InstallHistoryManager.clear(this)
-                    entries.clear()
-                    adapter.notifyDataSetChanged()
-                    updateEmptyState()
-                    Toast.makeText(this, getString(R.string.history_cleared), Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
-
         loadHistory()
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.history_menu, menu)
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        menu.findItem(R.id.action_clear_history)?.isEnabled = entries.isNotEmpty()
+        return super.onPrepareOptionsMenu(menu)
+    }
+
+    private fun confirmClear() {
+        DialogHelper.showConfirmation(
+            activity = this,
+            title = getString(R.string.history_clear_title),
+            message = getString(R.string.history_clear_confirm),
+            positiveLabel = getString(R.string.history_clear_yes),
+            negativeLabel = getString(R.string.cancel),
+            isDangerous = true,
+            onConfirm = {
+                InstallHistoryManager.clear(this)
+                entries.clear()
+                adapter.notifyDataSetChanged()
+                updateEmptyState()
+                Toast.makeText(this, getString(R.string.history_cleared), Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
     private fun loadHistory() {
-        entries.clear()
-        entries.addAll(InstallHistoryManager.getAll(this))
-        adapter.notifyDataSetChanged()
-        updateEmptyState()
+        lifecycleScope.launch {
+            val loaded = withContext(Dispatchers.IO) { InstallHistoryManager.getAll(this@InstallHistoryActivity) }
+            entries.clear()
+            entries.addAll(loaded)
+            adapter.notifyDataSetChanged()
+            updateEmptyState()
+            binding.recyclerHistory.scheduleLayoutAnimation()
+        }
     }
 
     private fun updateEmptyState() {
         val isEmpty = entries.isEmpty()
-        binding.textEmpty.isVisible = isEmpty
+        binding.layoutEmpty.isVisible = isEmpty
         binding.recyclerHistory.isVisible = !isEmpty
-        binding.btnClearHistory.isEnabled = !isEmpty
+        invalidateOptionsMenu()
     }
 
-    private fun deleteEntry(entry: InstallHistoryEntry, position: Int) {
+    private fun deleteEntry(entry: InstallHistoryEntry) {
+        if (!adapter.remove(entry)) return
         InstallHistoryManager.remove(this, entry.id)
-        adapter.removeAt(position)
         updateEmptyState()
     }
 
@@ -97,9 +115,10 @@ class InstallHistoryActivity : AppCompatActivity() {
             HistoryStatus.CANCELLED -> getString(R.string.history_status_cancelled)
         }
 
-        val durationText = when {
-            entry.durationMs < 1000 -> "${entry.durationMs}ms"
-            else -> String.format("%.1fs", entry.durationMs / 1000.0)
+        val durationText = if (entry.durationMs < 1000) {
+            "${entry.durationMs} ms"
+        } else {
+            String.format(Locale.getDefault(), "%.1f s", entry.durationMs / 1000.0)
         }
 
         val detail = buildString {
@@ -118,64 +137,25 @@ class InstallHistoryActivity : AppCompatActivity() {
             }
         }
 
-        val tv = TextView(this).apply {
-            text = detail
-            textSize = 13f
-            setPadding(48, 32, 48, 32)
-            setTextIsSelectable(true)
-        }
-
-        val title = entry.appLabel.ifEmpty { entry.packageName }
-
-        if (AppSettings.getDialogStyle(this) == DialogStyle.BOTTOM_SHEET) {
-            val sheet = BottomSheetDialog(this)
-            val scroll = ScrollView(this).apply { addView(tv) }
-            val container = android.widget.LinearLayout(this).apply {
-                orientation = android.widget.LinearLayout.VERTICAL
-                val titleView = TextView(this@InstallHistoryActivity).apply {
-                    text = title
-                    textSize = 16f
-                    setTypeface(null, android.graphics.Typeface.BOLD)
-                    setPadding(48, 40, 48, 0)
-                }
-                addView(titleView)
-                addView(scroll)
-                val closeBtn = android.widget.Button(this@InstallHistoryActivity).apply {
-                    text = getString(R.string.crash_log_close)
-                    isAllCaps = false
-                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                    setOnClickListener { sheet.dismiss() }
-                }
-                val btnLayout = android.widget.LinearLayout(this@InstallHistoryActivity).apply {
-                    gravity = android.view.Gravity.END
-                    setPadding(16, 0, 16, 16)
-                    addView(closeBtn)
-                }
-                addView(btnLayout)
-            }
-            sheet.setContentView(container)
-            sheet.setOnShowListener {
-                val bottomSheet = sheet.findViewById<android.view.View>(
-                    com.google.android.material.R.id.design_bottom_sheet
-                )
-                if (bottomSheet != null) {
-                    val behavior = BottomSheetBehavior.from(bottomSheet)
-                    behavior.skipCollapsed = true
-                    behavior.state = BottomSheetBehavior.STATE_EXPANDED
-                }
-            }
-            sheet.show()
-        } else {
-            AlertDialog.Builder(this)
-                .setTitle(title)
-                .setView(tv)
-                .setPositiveButton(getString(R.string.crash_log_close), null)
-                .show()
-        }
+        DialogHelper.showInfo(
+            activity = this,
+            title = entry.appLabel.ifEmpty { entry.packageName },
+            body = detail,
+            closeLabel = getString(R.string.crash_log_close),
+        )
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) { finish(); return true }
-        return super.onOptionsItemSelected(item)
+        return when (item.itemId) {
+            android.R.id.home -> {
+                finish()
+                true
+            }
+            R.id.action_clear_history -> {
+                confirmClear()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 }

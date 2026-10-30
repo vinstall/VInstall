@@ -1,0 +1,8 @@
+<resources>
+    <declare-styleable name="MaxHeightRecyclerView">
+        <attr name="maxListHeight" format="dimension" />
+    </declare-styleable>
+    <declare-styleable name="MaxHeightNestedScrollView">
+        <attr name="maxListHeight" />
+    </declare-styleable>
+</resources>

@@ -1,7 +1,9 @@
 package com.vinstall.alwiz
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -15,6 +17,7 @@ import com.vinstall.alwiz.model.InstallState
 import com.vinstall.alwiz.settings.DialogController
 import com.vinstall.alwiz.settings.DialogHelper
 import com.vinstall.alwiz.ui.ConfirmationBottomSheet
+import com.vinstall.alwiz.util.PackageVersions
 import kotlinx.coroutines.launch
 
 class InstallIntentActivity : AppCompatActivity() {
@@ -26,6 +29,7 @@ class InstallIntentActivity : AppCompatActivity() {
     private var passwordDialogShown = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityInstallIntentBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -84,14 +88,15 @@ class InstallIntentActivity : AppCompatActivity() {
             }
             is InstallState.FileSelected -> {
                 passwordDialogShown = false
+                val installed = PackageVersions.installed(this, state.packageName)
                 val info = ConfirmationBottomSheet.AppInstallInfo(
                     icon = state.appIcon,
                     appLabel = state.appLabel,
                     packageName = state.packageName,
                     versionName = state.versionName,
                     versionCode = state.versionCode,
-                    installedVersionName = null,
-                    installedVersionCode = null,
+                    installedVersionName = installed?.first,
+                    installedVersionCode = installed?.second,
                     minSdk = state.minSdk,
                     targetSdk = state.targetSdk
                 )
@@ -135,7 +140,7 @@ class InstallIntentActivity : AppCompatActivity() {
             "${state.packageName} · v${state.versionName}" else state.packageName
         dialogView.findViewById<android.widget.TextView>(R.id.text_apkv_info).text = subtitle
 
-        val dialog = AlertDialog.Builder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(title)
             .setView(dialogView)
             .setPositiveButton(getString(R.string.apkv_unlock), null)
@@ -145,7 +150,7 @@ class InstallIntentActivity : AppCompatActivity() {
 
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val password = editPassword.text?.toString()?.trim() ?: ""
+                val password = editPassword.text?.toString().orEmpty()
                 if (password.isBlank()) {
                     layoutPassword.error = getString(R.string.apkv_password_empty)
                     return@setOnClickListener

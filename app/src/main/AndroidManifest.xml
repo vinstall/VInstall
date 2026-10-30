@@ -29,6 +29,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.UniversalInstaller"
         android:requestLegacyExternalStorage="true">
@@ -36,8 +37,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize">
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -48,6 +48,7 @@
             android:name=".InstallIntentActivity"
             android:exported="true"
             android:theme="@style/Theme.UniversalInstaller.Transparent"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"
             android:launchMode="singleTop">
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
@@ -127,9 +128,19 @@
             android:label="@string/settings" />
 
         <activity
+            android:name=".credits.CreditsActivity"
+            android:exported="false"
+            android:label="@string/credits_title" />
+
+        <activity
             android:name=".history.InstallHistoryActivity"
             android:exported="false"
             android:label="@string/history_title" />
+
+        <activity
+            android:name=".crash.CrashLogActivity"
+            android:exported="false"
+            android:label="@string/crash_log_title" />
 
         <activity
             android:name=".DebugWindowActivity"
@@ -161,6 +172,15 @@
                 <action android:name="com.vinstall.alwiz.INSTALL_STATUS" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
 
     </application>
 

@@ -3,23 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_debug"
-        android:title="@string/debug_window"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/action_request_shizuku"
         android:title="@string/shizuku_request_permission"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_settings"
-        android:title="@string/settings"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_history"
-        android:title="@string/history_title"
         app:showAsAction="never" />
 
 </menu>

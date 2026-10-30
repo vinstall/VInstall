@@ -10,31 +10,35 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.view.MenuItem
-import android.view.View
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.checkbox.MaterialCheckBox
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
+import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.color.MaterialColors
 import com.vinstall.alwiz.R
-import com.vinstall.alwiz.settings.DialogHelper
 import com.vinstall.alwiz.backup.BackupManager
 import com.vinstall.alwiz.backup.BackupState
 import com.vinstall.alwiz.backup.BackupViewModel
 import com.vinstall.alwiz.databinding.ActivityAppDetailBinding
+import com.vinstall.alwiz.installer.UninstallHelper
 import com.vinstall.alwiz.model.AppInfo
 import com.vinstall.alwiz.settings.AppSettings
+import com.vinstall.alwiz.settings.DialogHelper
 import com.vinstall.alwiz.settings.InstallMode
+import com.vinstall.alwiz.ui.ExportDialog
+import com.vinstall.alwiz.ui.StorageAccess
+import com.vinstall.alwiz.ui.applyPressAnimation
+import com.vinstall.alwiz.ui.staggerIn
+import com.vinstall.alwiz.ui.applySystemBarInsets
 import com.vinstall.alwiz.util.DebugLog
 import com.vinstall.alwiz.util.FileUtil
 import com.vinstall.alwiz.util.HashUtil
-import com.vinstall.alwiz.installer.UninstallHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,7 +55,9 @@ class AppDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAppDetailBinding
     private val backupViewModel: BackupViewModel by viewModels()
+    private val storageAccess = StorageAccess(this)
     private var currentApp: AppInfo? = null
+    private var entered = false
 
     private val uninstallLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -64,24 +70,23 @@ class AppDetailActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityAppDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
-        }
+        binding.root.applySystemBarInsets()
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         val packageName = intent.getStringExtra(EXTRA_PACKAGE_NAME)
-        if (packageName == null) { finish(); return }
+        if (packageName == null) {
+            finish()
+            return
+        }
 
         lifecycleScope.launch {
-            val app = loadAppInfo(packageName)
+            val app = BackupManager.getApp(this@AppDetailActivity, packageName)
             if (app == null) {
                 Toast.makeText(this@AppDetailActivity, getString(R.string.app_not_found), Toast.LENGTH_SHORT).show()
                 finish()
@@ -92,30 +97,44 @@ class AppDetailActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch {
-            backupViewModel.backupState.collect { state ->
-                when (state) {
-                    is BackupState.Idle -> {
-                        binding.progressBackup.visibility = View.GONE
-                        binding.textBackupStatus.visibility = View.GONE
-                    }
-                    is BackupState.Running -> {
-                        binding.progressBackup.visibility = View.VISIBLE
-                        binding.textBackupStatus.visibility = View.VISIBLE
-                        binding.textBackupStatus.text = state.step
-                    }
-                    is BackupState.Done -> {
-                        binding.progressBackup.visibility = View.GONE
-                        binding.textBackupStatus.visibility = View.VISIBLE
-                        binding.textBackupStatus.text = getString(R.string.backup_success, state.path)
-                    }
-                    is BackupState.Error -> {
-                        binding.progressBackup.visibility = View.GONE
-                        binding.textBackupStatus.visibility = View.VISIBLE
-                        binding.textBackupStatus.text = getString(R.string.backup_failed, state.message)
-                    }
-                }
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                backupViewModel.backupState.collect { renderBackupState(it) }
             }
         }
+    }
+
+    private fun renderBackupState(state: BackupState) {
+        var color = MaterialColors.getColor(
+            binding.root,
+            com.google.android.material.R.attr.colorOnSurfaceVariant
+        )
+        when (state) {
+            is BackupState.Idle -> {
+                binding.progressBackup.isVisible = false
+                binding.textBackupStatus.isVisible = false
+                binding.btnBackup.isEnabled = true
+                return
+            }
+            is BackupState.Running -> {
+                binding.progressBackup.isVisible = true
+                binding.textBackupStatus.text = state.step
+                binding.btnBackup.isEnabled = false
+            }
+            is BackupState.Done -> {
+                binding.progressBackup.isVisible = false
+                binding.textBackupStatus.text = getString(R.string.backup_success, state.path)
+                binding.btnBackup.isEnabled = true
+                color = ContextCompat.getColor(this, R.color.status_ok)
+            }
+            is BackupState.Error -> {
+                binding.progressBackup.isVisible = false
+                binding.textBackupStatus.text = getString(R.string.backup_failed, state.message)
+                binding.btnBackup.isEnabled = true
+                color = MaterialColors.getColor(binding.root, androidx.appcompat.R.attr.colorError)
+            }
+        }
+        binding.textBackupStatus.setTextColor(color)
+        binding.textBackupStatus.isVisible = true
     }
 
     private fun renderApp(app: AppInfo) {
@@ -130,24 +149,24 @@ class AppDetailActivity : AppCompatActivity() {
         binding.textApkSize.text = getString(R.string.apk_size, FileUtil.formatSize(app.sizeBytes))
         binding.textDataDir.text = app.dataDir
 
-        binding.chipSplit.visibility = if (app.isSplitApp) View.VISIBLE else View.GONE
-        binding.chipSystem.visibility = if (app.isSystemApp) View.VISIBLE else View.GONE
-        binding.chipDebug.visibility = if (app.isDebuggable) View.VISIBLE else View.GONE
+        binding.chipSplit.isVisible = app.isSplitApp
+        binding.chipSystem.isVisible = app.isSystemApp
+        binding.chipDebug.isVisible = app.isDebuggable
 
         val splitCount = (app.splitSourceDirs?.size ?: 0) + 1
         binding.textSplitCount.text = getString(R.string.split_count, splitCount)
 
-        val permText = if (app.requestedPermissions.isEmpty()) {
+        binding.textPermissions.text = if (app.requestedPermissions.isEmpty()) {
             getString(R.string.no_permissions)
         } else {
-            app.requestedPermissions.joinToString("\n") { "• $it" }
+            app.requestedPermissions.joinToString("\n")
         }
-        binding.textPermissions.text = permText
 
+        val launchable = packageManager.getLaunchIntentForPackage(app.packageName) != null
+        binding.btnOpenApp.isEnabled = launchable
         binding.btnOpenApp.setOnClickListener {
-            val launchIntent = packageManager.getLaunchIntentForPackage(app.packageName)
-            if (launchIntent != null) startActivity(launchIntent)
-            else Toast.makeText(this, getString(R.string.cannot_launch), Toast.LENGTH_SHORT).show()
+            packageManager.getLaunchIntentForPackage(app.packageName)?.let { startActivity(it) }
+                ?: Toast.makeText(this, getString(R.string.cannot_launch), Toast.LENGTH_SHORT).show()
         }
 
         binding.btnAppInfo.setOnClickListener {
@@ -159,51 +178,45 @@ class AppDetailActivity : AppCompatActivity() {
         }
 
         binding.btnBackup.setOnClickListener {
-            showExportDialog(app)
-        }
-
-        binding.btnUninstall.setOnClickListener {
-            if (app.isSystemApp) {
-                Toast.makeText(this, getString(R.string.cannot_uninstall_system), Toast.LENGTH_SHORT).show()
+            if (backupViewModel.isRunning()) {
+                Toast.makeText(this, R.string.export_in_progress, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            showUninstallDialog(app)
-        }
-
-        binding.btnHash.setOnClickListener {
-            computeAndShowHash(app)
-        }
-    }
-
-    private fun showExportDialog(app: AppInfo) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_export, null)
-        val textInfo = dialogView.findViewById<android.widget.TextView>(R.id.text_export_info)
-        val checkboxEncrypt = dialogView.findViewById<MaterialCheckBox>(R.id.checkbox_encrypt)
-        val layoutPassword = dialogView.findViewById<TextInputLayout>(R.id.layout_password)
-        val editPassword = dialogView.findViewById<TextInputEditText>(R.id.edit_password)
-
-        textInfo.text = getString(R.string.export_info, app.label, app.versionName)
-
-        checkboxEncrypt.setOnCheckedChangeListener { _, checked ->
-            layoutPassword.visibility = if (checked) View.VISIBLE else View.GONE
-            if (!checked) editPassword.text?.clear()
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.export_dialog_title))
-            .setView(dialogView)
-            .setPositiveButton(getString(R.string.export_button)) { _, _ ->
-                val password = if (checkboxEncrypt.isChecked) {
-                    editPassword.text?.toString()?.takeIf { it.isNotBlank() }
-                } else null
-                val outputDir = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                    "VInstall/Backups"
-                )
-                backupViewModel.backup(app, outputDir, password)
+            ExportDialog.show(this, app) { password ->
+                storageAccess.run {
+                    val outputDir = File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                        "VInstall/Backups"
+                    )
+                    backupViewModel.backup(app, outputDir, password)
+                }
             }
-            .setNegativeButton(getString(R.string.cancel), null)
-            .show()
+        }
+
+        binding.btnUninstall.isEnabled = !app.isSystemApp
+        binding.textSystemNote.isVisible = app.isSystemApp
+        binding.btnUninstall.setOnClickListener { showUninstallDialog(app) }
+
+        binding.btnHash.setOnClickListener { computeAndShowHash(app) }
+
+        listOf(
+            binding.btnOpenApp,
+            binding.btnAppInfo,
+            binding.btnBackup,
+            binding.btnHash,
+            binding.btnUninstall
+        ).forEach { it.applyPressAnimation() }
+
+        if (!entered) {
+            entered = true
+            listOf<android.view.View>(
+                binding.cardHeader,
+                binding.cardInfo,
+                binding.layoutActions,
+                binding.btnUninstall,
+                binding.cardPermissions
+            ).staggerIn()
+        }
     }
 
     private fun showUninstallDialog(app: AppInfo) {
@@ -259,42 +272,40 @@ class AppDetailActivity : AppCompatActivity() {
     }
 
     private fun computeAndShowHash(app: AppInfo) {
-        binding.layoutHashLoading.visibility = View.VISIBLE
+        binding.layoutHashLoading.isVisible = true
         binding.btnHash.isEnabled = false
         lifecycleScope.launch {
             val hashes = withContext(Dispatchers.IO) {
                 HashUtil.computeAll(File(app.sourceDir))
             }
-            binding.layoutHashLoading.visibility = View.GONE
+            binding.layoutHashLoading.isVisible = false
             binding.btnHash.isEnabled = true
 
-            val message = hashes.entries.joinToString("\n\n") { (algo, hash) ->
-                "$algo:\n$hash"
-            }
+            val message = hashes.entries.joinToString("\n\n") { (algo, hash) -> "$algo:\n$hash" }
 
-            AlertDialog.Builder(this@AppDetailActivity)
-                .setTitle(getString(R.string.hash_info_title))
-                .setMessage(message)
-                .setPositiveButton(getString(R.string.ok), null)
-                .setNeutralButton("Copy SHA-256") { _, _ ->
-                    val sha256 = hashes["SHA-256"] ?: return@setNeutralButton
+            DialogHelper.showInfo(
+                activity = this@AppDetailActivity,
+                title = getString(R.string.hash_info_title),
+                body = message,
+                closeLabel = getString(R.string.ok),
+                subtitle = app.label,
+                monospace = true,
+                primaryLabel = getString(R.string.copy_sha256),
+                onPrimary = {
+                    val sha256 = hashes["SHA-256"] ?: return@showInfo
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText("SHA-256", sha256))
                     Toast.makeText(this@AppDetailActivity, getString(R.string.hash_copied), Toast.LENGTH_SHORT).show()
                 }
-                .show()
+            )
         }
     }
 
-    private suspend fun loadAppInfo(packageName: String): AppInfo? {
-        return try {
-            val list = BackupManager.listInstalledApps(this, includeSystem = true)
-            list.firstOrNull { it.packageName == packageName }
-        } catch (_: Exception) { null }
-    }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) { finish(); return true }
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
         return super.onOptionsItemSelected(item)
     }
 }

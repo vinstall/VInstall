@@ -6,10 +6,19 @@ import android.content.Context
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.vinstall.alwiz.databinding.ActivityDebugBinding
+import com.vinstall.alwiz.ui.FloatingNav
+import com.vinstall.alwiz.ui.applyPressAnimation
+import com.vinstall.alwiz.ui.staggerIn
+import com.vinstall.alwiz.ui.applySystemBarInsets
+import com.vinstall.alwiz.ui.bindFloatingNav
 import com.vinstall.alwiz.util.DebugLog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class DebugWindowActivity : AppCompatActivity() {
@@ -17,22 +26,32 @@ class DebugWindowActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDebugBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityDebugBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.applySystemBarInsets()
 
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        bindFloatingNav(binding.floatingNav, FloatingNav.Tab.DEBUG)
         supportActionBar?.title = getString(R.string.debug_window)
 
         lifecycleScope.launch {
-            DebugLog.entries.collect { entries ->
-                val text = entries.joinToString("\n")
+            DebugLog.entries
+                .map { entries -> entries.joinToString("\n") }
+                .flowOn(Dispatchers.Default)
+                .collect { text ->
                 binding.textDebugLog.text = text
                 binding.scrollView.post {
                     binding.scrollView.fullScroll(android.view.View.FOCUS_DOWN)
                 }
             }
+        }
+
+        binding.btnClearLog.applyPressAnimation()
+        binding.btnCopyLog.applyPressAnimation()
+        if (savedInstanceState == null) {
+            listOf<android.view.View>(binding.cardLog, binding.layoutActions).staggerIn()
         }
 
         binding.btnClearLog.setOnClickListener {

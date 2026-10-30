@@ -4,7 +4,11 @@ import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
 import com.vinstall.alwiz.settings.AppSettings
 import com.vinstall.alwiz.util.CrashHandler
+import com.vinstall.alwiz.util.FileUtil
 import com.vinstall.alwiz.util.NotificationHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class App : Application() {
 
@@ -13,6 +17,10 @@ class App : Application() {
         CrashHandler.install(this)
         NotificationHelper.createChannel(this)
         applyTheme(AppSettings.getTheme(this))
+        if (AppSettings.isAutoClearCache(this)) {
+            val startedAt = System.currentTimeMillis()
+            CoroutineScope(Dispatchers.IO).launch { FileUtil.clearStaleCache(this@App, startedAt) }
+        }
     }
 
     companion object {

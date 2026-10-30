@@ -2,77 +2,76 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:background="?attr/selectableItemBackground"
     android:gravity="center_vertical"
-    android:minHeight="72dp"
-    android:paddingHorizontal="4dp"
-    android:paddingVertical="10dp">
+    android:minHeight="64dp"
+    android:orientation="horizontal"
+    android:paddingStart="4dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="0dp"
+    android:paddingBottom="8dp">
 
     <TextView
         android:id="@+id/text_queue_number"
         android:layout_width="28dp"
         android:layout_height="28dp"
         android:gravity="center"
-        android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:background="@null" />
+        android:textAppearance="@style/TextAppearance.VInstall.LabelMedium"
+        android:textColor="?attr/colorOnSurfaceVariant" />
 
     <ImageView
         android:id="@+id/image_queue_icon"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_marginStart="8dp"
-        android:scaleType="fitCenter"
-        android:contentDescription="@null" />
+        android:importantForAccessibility="no"
+        android:scaleType="fitCenter" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:layout_marginStart="10dp"
+        android:layout_marginStart="12dp"
         android:layout_marginEnd="4dp"
+        android:layout_weight="1"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/text_queue_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-            android:textColor="?attr/colorOnSurface"
+            android:ellipsize="end"
             android:maxLines="1"
-            android:ellipsize="end" />
+            android:textAppearance="@style/TextAppearance.VInstall.BodyMedium"
+            android:textColor="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/text_queue_meta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
-            android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-            android:textColor="?attr/colorOnSurfaceVariant"
+            android:ellipsize="end"
             android:maxLines="1"
-            android:ellipsize="end" />
+            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
 
         <TextView
             android:id="@+id/text_queue_hash"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
-            android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-            android:textColor="?attr/colorOutline"
-            android:fontFamily="monospace"
-            android:maxLines="1"
             android:ellipsize="end"
+            android:maxLines="1"
+            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:visibility="gone" />
-
     </LinearLayout>
 
     <ImageView
         android:id="@+id/icon_drag_handle"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:padding="6dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:padding="12dp"
+        android:scaleType="fitCenter"
         android:src="@drawable/ic_drag_handle"
-        android:contentDescription="@null"
-        android:scaleType="fitCenter" />
-
+        android:importantForAccessibility="no" />
 </LinearLayout>

@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">VInstall</string>
-    <string name="select_file">Select File</string>
+    <string name="app_name" translatable="false">VInstall</string>
+    <string name="select_file">Choose files</string>
     <string name="install">Install</string>
     <string name="no_file_selected">No file selected</string>
-    <string name="tap_to_select">Tap \"Select File\" to choose one or more APK, XAPK, APKS, APKM, APKV, or ZIP packages.</string>
+    <string name="tap_to_select">Choose APK, XAPK, APKS, APKM, APKV or ZIP files. Pick several to install them one after another.</string>
     <string name="queue_label">%1$d files queued</string>
     <string name="queue_drag_hint">Drag to reorder</string>
     <string name="format_label">Format</string>
@@ -19,7 +19,7 @@
     <string name="ok">OK</string>
     <string name="select_all">Select All</string>
     <string name="deselect_all">Deselect All</string>
-    <string name="batch_progress">%1$d / %2$d</string>
+    <string name="batch_progress" translatable="false">%1$d / %2$d</string>
 
     <string name="app_manager">App Manager</string>
     <string name="app_detail">App Detail</string>
@@ -45,7 +45,7 @@
     <string name="sort_size">Size</string>
     <string name="sort_install">Installed</string>
     <string name="sort_update">Updated</string>
-    <string name="version_detail">v%1$s (%2$d)</string>
+    <string name="version_detail" translatable="false">v%1$s (%2$d)</string>
     <string name="sdk_detail">Min SDK: %1$d  ·  Target SDK: %2$d</string>
     <string name="install_date">Installed: %1$s</string>
     <string name="update_date">Updated: %1$s</string>
@@ -53,9 +53,8 @@
     <string name="split_count">%1$d APK file(s)</string>
     <string name="no_permissions">No permissions requested.</string>
     <string name="permissions_title">Requested Permissions</string>
-    <string name="refresh">Refresh</string>
 
-    <string name="select_splits">Select Split Parts</string>
+    <string name="select_splits">Split parts</string>
     <string name="shizuku_active">Shizuku: Active</string>
     <string name="shizuku_inactive">Shizuku: Not Running</string>
     <string name="shizuku_needs_grant">Shizuku: Needs Permission</string>
@@ -96,9 +95,9 @@
     <string name="root_checking">Root: Checking…</string>
 
     <string name="settings_debug_window">Debug Window</string>
-    <string name="settings_debug_window_desc">Show debug log button on main screen (default: on)</string>
-    <string name="settings_clear_cache">Clear Cache After Install</string>
-    <string name="settings_clear_cache_desc">Delete temporary files after installation</string>
+    <string name="settings_debug_window_desc">Show debug log button on main screen</string>
+    <string name="settings_auto_clear_cache">Auto Clear Cache</string>
+    <string name="settings_auto_clear_cache_desc">Automatically delete temporary files when the app is no longer picked</string>
     <string name="settings_dialog_style">Dialog style</string>
     <string name="dialog_style_bottom_sheet">Bottom Sheet</string>
     <string name="dialog_style_alert_dialog">Alert Dialog</string>
@@ -126,7 +125,7 @@
     <string name="confirm_install_message">Are you sure you want to install this package?</string>
 
     <string name="export_dialog_title">Export App</string>
-    <string name="export_info">%1$s · v%2$s</string>
+    <string name="export_info" translatable="false">%1$s · v%2$s</string>
     <string name="export_encrypt">Encrypt with password</string>
     <string name="export_password_hint">Password</string>
     <string name="export_button">Export</string>
@@ -135,10 +134,10 @@
     <string name="apkv_wrong_password">Incorrect password</string>
     <string name="apkv_tap_to_unlock">Tap to enter password</string>
 
-    <string name="package_meta">%1$s v%2$s</string>
-    <string name="label_sha256">SHA-256</string>
-    <string name="separator_dot"> · </string>
-    <string name="nav_right_arrow">›</string>
+    <string name="package_meta" translatable="false">%1$s v%2$s</string>
+    <string name="label_sha256" translatable="false">SHA-256</string>
+    <string name="separator_dot" translatable="false"> · </string>
+    <string name="nav_right_arrow" translatable="false">›</string>
     <string name="app_icon_desc">App icon</string>
 
     <string name="version_new_install">New installation · v%1$s</string>
@@ -182,4 +181,76 @@
         <item quantity="one">%1$d app</item>
         <item quantity="other">%1$d apps</item>
     </plurals>
+
+    <string name="install_queue">Install %1$d files</string>
+    <string name="retry">Retry</string>
+    <string name="queue_locked_hint">%1$d encrypted file(s) need a password before installing.</string>
+    <string name="select_splits_count">Split parts (%1$d/%2$d)</string>
+    <string name="select_splits_loading">Reading split parts…</string>
+    <string name="select_splits_none_selected">Select at least one part</string>
+    <string name="batch_finished">Finished %1$d files</string>
+    <string name="view_history_short">History</string>
+    <string name="shizuku_tap_to_grant">Tap to allow Shizuku access</string>
+    <string name="mode_row_desc">Install mode. Opens settings.</string>
+    <string name="tool_apps_title">App manager</string>
+    <string name="tool_apps_desc">Browse installed apps, export or uninstall them</string>
+    <string name="tool_export_title">Export app</string>
+    <string name="tool_export_desc">Save an installed app as an .apkv archive</string>
+    <string name="tool_history_title">Install history</string>
+    <string name="tool_history_desc">Review past installs and their results</string>
+    <string name="export_permission_rationale">VInstall needs storage access to save exports in Documents/VInstall/Backups.</string>
+    <string name="export_password_required">Enter a password or turn off encryption</string>
+    <string name="export_in_progress">An export is already running.</string>
+    <string name="export_saved_title">Export saved</string>
+    <string name="apps_empty">No apps match your search</string>
+    <string name="copy_sha256">Copy SHA-256</string>
+    <string name="history_delete_desc">Delete this record</string>
+    <string name="history_empty_hint">Installed packages will be listed here.</string>
+    <string name="app_detail_section_about">About this app</string>
+    <string name="app_detail_system_note">System apps can\'t be uninstalled.</string>
+    <string name="settings_install_mode_summary">How packages get installed</string>
+    <string name="back">Back</string>
+    <string name="sort_by">Sort by</string>
+    <string name="search_clear">Clear search</string>
+    <string name="crash_report_title">Crash Report</string>
+    <string name="crash_detected_title">Crash Detected</string>
+    <string name="crash_detected_message">VInstall crashed on the previous session. The report has been saved to Settings → Crash Reports.</string>
+    <string name="crash_view_report">View Report</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="settings_language">Language</string>
+    <string name="language_system">Follow System</string>
+    <string name="choose_language">Choose language</string>
+    <string name="language_en" translatable="false">English</string>
+    <string name="language_in" translatable="false">Bahasa Indonesia</string>
+    <string name="language_ru" translatable="false">Русский</string>
+    <string name="language_zh" translatable="false">中文（简体）</string>
+    <string name="nav_install">Install</string>
+    <string name="nav_debug">Debug</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_log">Log</string>
+    <string name="crash_log_empty_hint">Crash reports will appear here if the app ever crashes.</string>
+    <string name="crash_log_delete_desc">Delete this crash report</string>
+    <string name="credits_title">Credits</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_credits">Credits</string>
+    <string name="settings_credits_desc">License, libraries and thanks</string>
+    <string name="credits_app_version">Version %1$s</string>
+    <string name="credits_tagline">A minimal installer for APK, XAPK, APKS, APKM, APKV and ZIP packages, with a built-in app manager and backup.</string>
+    <string name="credits_developed_by">Developed by AlwizBA / VInstall</string>
+    <string name="credits_developer_profile">Developer on GitHub</string>
+    <string name="credits_section_license">License</string>
+    <string name="credits_license_name">GNU General Public License v3.0</string>
+    <string name="credits_license_desc">VInstall is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.</string>
+    <string name="credits_license_osi">View license on opensource.org</string>
+    <string name="credits_license_text">Read full license text</string>
+    <string name="credits_source_code">Source code on GitHub</string>
+    <string name="credits_section_thanks">Thank you</string>
+    <string name="credits_thanks_intro">VInstall would not exist without the open-source community. Heartfelt thanks to:</string>
+    <string name="credits_thanks_list">• Android Open Source Project and Jetpack (AndroidX)\n• Material Design and Material Components\n• Kotlin, JetBrains and kotlinx.coroutines\n• Gson\n• Shizuku API by RikkaApps\n• Poppins typeface by Indian Type Foundry\n• Gradle and GitHub Actions\n• The SAI (APKS), APKMirror (APKM) and XAPK communities for the package formats</string>
+    <string name="credits_thanks_community">And thank you to everyone who reports bugs, suggests features, translates and tests VInstall.</string>
+    <string name="credits_section_libs">Open-source components</string>
+    <string name="credits_libs_intro">Tap a component to open its project page, or tap License to read its license on opensource.org.</string>
+    <string name="credits_license_short">License</string>
+    <string name="credits_footer">Thank you for using VInstall ♥</string>
+    <string name="credits_open_failed">No app found to open this link</string>
 </resources>

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -28,6 +28,7 @@ class AppManagerViewModel(app: Application) : AndroidViewModel(app) {
     private var loadJob: Job? = null
 
     val isLoading: StateFlow<Boolean> = _isLoading
+    val includeSystem: StateFlow<Boolean> = _includeSystem
 
     val displayedApps: StateFlow<List<AppInfo>> = combine(
         _allApps, _query, _includeSystem, _sortOrder
@@ -43,12 +44,13 @@ class AppManagerViewModel(app: Application) : AndroidViewModel(app) {
             SortOrder.INSTALL_DATE -> queried.sortedByDescending { it.installTimeMs }
             SortOrder.UPDATE_DATE -> queried.sortedByDescending { it.updateTimeMs }
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun loadApps() {
+        if (_isLoading.value && loadJob?.isActive == true) return
         loadJob?.cancel()
+        _isLoading.value = true
         loadJob = viewModelScope.launch(Dispatchers.IO) {
-            _isLoading.value = true
             DebugLog.i("AppManagerVM", "Loading application list...")
             try {
                 val apps = BackupManager.listInstalledApps(getApplication(), includeSystem = true)

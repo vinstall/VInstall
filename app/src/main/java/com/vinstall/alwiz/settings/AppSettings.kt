@@ -9,7 +9,7 @@ object AppSettings {
     private const val KEY_INSTALL_MODE = "install_mode"
     private const val KEY_DEBUG_WINDOW = "debug_window"
     private const val KEY_THEME = "theme"
-    private const val KEY_CLEAR_CACHE_AFTER = "clear_cache_after"
+    private const val KEY_AUTO_CLEAR_CACHE = "auto_clear_cache"
     private const val KEY_CONFIRM_INSTALL = "confirm_install"
     private const val KEY_SHIZUKU_PERMISSION_GRANTED = "shizuku_permission_granted"
     private const val KEY_DIALOG_STYLE = "dialog_style"
@@ -42,11 +42,11 @@ object AppSettings {
         prefs(context).edit().putString(KEY_THEME, theme).apply()
     }
 
-    fun isClearCacheAfterInstall(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_CLEAR_CACHE_AFTER, true)
+    fun isAutoClearCache(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_AUTO_CLEAR_CACHE, true)
 
-    fun setClearCacheAfterInstall(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_CLEAR_CACHE_AFTER, enabled).apply()
+    fun setAutoClearCache(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_AUTO_CLEAR_CACHE, enabled).apply()
     }
 
     fun isConfirmInstall(context: Context): Boolean =

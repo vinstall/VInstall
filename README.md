@@ -1,6 +1,6 @@
 # VInstall
 
-A minimal Android application for installing APK, XAPK, APKS, APKM, APKV, and ZIP packages, with a built-in app manager, backup, and uninstaller.
+A minimal Android application for installing APK, XAPK, APKS, APKM, APKV, and ZIP packages, with batch install, install history, a built-in app manager, backup, and uninstaller.
 
 ## Features
 
@@ -19,18 +19,35 @@ Supports six package formats:
 
 For split APK formats (XAPK, APKS, APKM, APKV, ZIP), individual splits can be selected or deselected before installation. APKV files support optional password-based encryption and integrity verification via SHA-256 checksums.
 
+Packages can also be opened directly from a file manager or browser. VInstall registers itself as a handler for these file types and shows a confirmation sheet with the app details before installing.
+
+### Batch Install
+
+Pick several files at once and install them one after another:
+
+- Drag to reorder the queue before starting
+- Overall progress is shown as the current file out of the total
+- Encrypted APKV files in the queue are marked as locked, tap them to enter the password before installing
+- Unreadable files are skipped instead of stopping the whole batch
+- Install progress and results are also posted as notifications
+
+### Install History
+
+Every installation is recorded with its result (success, failed, or cancelled). Tap an entry to see the package name, version, format, file size, install mode, duration, time, and result details. Single records can be deleted, or the whole history can be cleared from Settings.
+
 ### Install Modes
 
 Three installation modes are available:
 
-- **Normal** — uses the standard Android package installer
-- **Root** — installs silently using root access
-- **Shizuku** — installs silently via the [Shizuku](https://shizuku.rikka.app/) service without requiring full root
+- **Normal** - uses the standard Android package installer
+- **Root** - installs silently using root access
+- **Shizuku** - installs silently via the [Shizuku](https://shizuku.rikka.app/) service without requiring full root
 
 ### App Manager
 
 Browse all installed user apps with the ability to:
 
+- Search by app name or package name, sort by name, size, install date, or update date, and optionally include system apps
 - View app details: version, SDK range, install and update dates, APK size, data directory, split count, and requested permissions
 - Launch or open the system app info page
 - Export the app as an `.apkv` archive
@@ -46,11 +63,17 @@ Export any installed user app as an `.apkv` archive directly from the App Manage
 | Setting | Description |
 |---------|-------------|
 | Install mode | Normal, Root, or Shizuku |
+| Language | Follow system, English, Bahasa Indonesia, Русский, or 中文（简体） |
 | Theme | Light, Dark, or follow system |
+| Dialog style | Show dialogs as a Bottom Sheet or an Alert Dialog |
 | Confirm before install | Show a confirmation dialog before installing |
-| Clear cache after install | Automatically remove temp files after installation |
+| Auto clear cache | Automatically delete temporary files after installation |
 | Debug window | Show or hide the in-app log viewer |
-| Crash Reports |  Logs can be viewed, copied, or cleared directly from the app |
+| Install history | View, inspect, or clear past installation records |
+| Crash reports | Logs can be viewed, copied, or cleared directly from the app |
+| Credits | License, open-source libraries, and thanks |
+
+If VInstall crashed during the previous session, a prompt appears on the next launch with a shortcut to the saved report.
 
 ## Requirements
 
@@ -84,8 +107,8 @@ Before triggering a release build, create a keystore and configure the following
 Then push a tag prefixed with `v` to trigger the release workflow:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v0.4.5
+git push origin v0.4.5
 ```
 
 The signed release APK will be automatically attached to the corresponding GitHub Release.
@@ -133,7 +156,8 @@ This project uses the following open-source libraries:
 | [Material Components for Android](https://github.com/material-components/material-components-android) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
 | [Kotlin Coroutines](https://github.com/Kotlin/kotlinx.coroutines) | JetBrains | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
 | [Gson](https://github.com/google/gson) | Google | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
-| [Shizuku](https://github.com/RikkaApps/Shizuku) | RikkaApps | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | |
+| [Shizuku API](https://github.com/RikkaApps/Shizuku-API) | RikkaApps | [MIT](https://github.com/RikkaApps/Shizuku-API/blob/master/LICENSE) | `api` and `provider` modules only |
+| [Poppins](https://github.com/itfoundry/Poppins) | Indian Type Foundry | [OFL 1.1](https://openfontlicense.org/) | Typeface |
 | [Bouncy Castle](https://www.bouncycastle.org/) | The Legion of the Bouncy Castle | [MIT-style](https://www.bouncycastle.org/licence.html) | Removed in v0.4.2-hotfix2 |
 
 ## Author

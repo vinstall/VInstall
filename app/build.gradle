@@ -12,8 +12,8 @@ android {
         applicationId "com.vinstall.alwiz"
         minSdk 21
         targetSdk 36
-        versionCode 5
-        versionName "0.4.4"
+        versionCode 6
+        versionName "0.4.5"
     }
 
     signingConfigs {
@@ -74,6 +74,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.fragment:fragment-ktx:1.8.8'
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'

@@ -103,4 +103,10 @@ object FileUtil {
     fun clearCache(context: Context) {
         context.cacheDir.listFiles()?.forEach { it.deleteRecursively() }
     }
+
+    fun clearStaleCache(context: Context, modifiedBefore: Long) {
+        context.cacheDir.listFiles()?.forEach {
+            if (it.lastModified() < modifiedBefore) it.deleteRecursively()
+        }
+    }
 }

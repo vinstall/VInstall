@@ -1,21 +1,85 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <style name="Theme.UniversalInstaller" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorPrimaryContainer">@color/primary_container</item>
         <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/primary_inverse</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorOnSecondary">@color/on_secondary</item>
+        <item name="colorSecondaryContainer">@color/secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/on_secondary_container</item>
+        <item name="colorError">@color/error_role</item>
+        <item name="colorOnError">@color/on_error_role</item>
+        <item name="colorErrorContainer">@color/error_container_role</item>
+        <item name="colorOnErrorContainer">@color/on_error_container_role</item>
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="colorOnBackground">@color/on_surface</item>
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/on_surface</item>
         <item name="colorSurfaceVariant">@color/surface_variant</item>
         <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
-        </style>
-        
+        <item name="colorSurfaceInverse">@color/surface_inverse</item>
+        <item name="colorOnSurfaceInverse">@color/on_surface_inverse</item>
+        <item name="colorOutline">@color/outline_role</item>
+        <item name="colorOutlineVariant">@color/outline_variant_role</item>
+        <item name="colorSurfaceContainerLowest">@color/container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/container_low</item>
+        <item name="colorSurfaceContainer">@color/container</item>
+        <item name="colorSurfaceContainerHigh">@color/container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/container_highest</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.VInstall.Medium</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.VInstall.MaterialAlertDialog</item>
+
+        <item name="toolbarStyle">@style/Widget.VInstall.Toolbar</item>
+        <item name="android:fontFamily">@font/poppins</item>
+        <item name="fontFamily">@font/poppins</item>
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.VInstall.DisplayLarge</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.VInstall.DisplayMedium</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.VInstall.DisplaySmall</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.VInstall.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.VInstall.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.VInstall.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.VInstall.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.VInstall.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.VInstall.TitleSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.VInstall.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.VInstall.BodyMedium</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.VInstall.BodySmall</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.VInstall.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.VInstall.LabelMedium</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.VInstall.LabelSmall</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="android:windowAnimationStyle">@style/Animation.VInstall.Dialog</item>
+    </style>
+
+    <style name="Animation.VInstall.Dialog" parent="">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit</item>
+    </style>
+
+    <style name="ShapeAppearance.VInstall.Medium" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+
     <style name="Theme.UniversalInstaller.Transparent" parent="Theme.UniversalInstaller">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:backgroundDimEnabled">true</item>
     </style>
+
+    <style name="Widget.VInstall.Row" parent="">
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:minHeight">64dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">4dp</item>
+        <item name="android:paddingEnd">4dp</item>
+    </style>
+
 </resources>

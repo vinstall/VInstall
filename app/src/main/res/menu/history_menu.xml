@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_refresh"
-        android:title="@string/refresh"
-        app:showAsAction="ifRoom" />
+        android:id="@+id/action_clear_history"
+        android:title="@string/history_clear_all"
+        app:showAsAction="never" />
 
 </menu>

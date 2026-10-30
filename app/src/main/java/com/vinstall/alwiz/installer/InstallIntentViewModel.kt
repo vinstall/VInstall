@@ -155,7 +155,7 @@ class InstallIntentViewModel(app: Application) : AndroidViewModel(app) {
 
             if (result.isFailure) {
                 _state.value = InstallState.Error(result.exceptionOrNull()?.message ?: "Install failed")
-                if (AppSettings.isClearCacheAfterInstall(context)) FileUtil.clearCache(context)
+                autoClearCache()
                 return@launch
             }
 
@@ -163,7 +163,7 @@ class InstallIntentViewModel(app: Application) : AndroidViewModel(app) {
                 InstallHelper.awaitResult(timeoutMs = 120_000L)
             }
 
-            if (AppSettings.isClearCacheAfterInstall(context)) FileUtil.clearCache(context)
+            autoClearCache()
 
             _state.value = when {
                 installResult == null -> InstallState.Error("Installation timed out")
@@ -184,6 +184,16 @@ class InstallIntentViewModel(app: Application) : AndroidViewModel(app) {
                 else -> InstallState.Error("Unknown result")
             }
         }
+    }
+
+    private fun autoClearCache() {
+        val context = getApplication<Application>()
+        if (AppSettings.isAutoClearCache(context)) FileUtil.clearCache(context)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch { autoClearCache() }
     }
 
     private fun getInstalledVersionInfo(packageName: String): Pair<String, Long>? {

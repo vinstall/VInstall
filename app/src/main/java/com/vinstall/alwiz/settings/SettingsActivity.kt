@@ -1,22 +1,26 @@
 package com.vinstall.alwiz.settings
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.MenuItem
-import android.widget.ScrollView
-import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.vinstall.alwiz.App
 import com.vinstall.alwiz.R
+import com.vinstall.alwiz.crash.CrashLogActivity
+import com.vinstall.alwiz.credits.CreditsActivity
 import com.vinstall.alwiz.databinding.ActivitySettingsBinding
 import com.vinstall.alwiz.shizuku.ShizukuHelper
+import com.vinstall.alwiz.ui.FloatingNav
+import com.vinstall.alwiz.ui.applySystemBarInsets
+import com.vinstall.alwiz.ui.applyPressAnimation
+import com.vinstall.alwiz.ui.bindFloatingNav
+import com.vinstall.alwiz.ui.staggerChildren
 import com.vinstall.alwiz.util.CrashHandler
 import com.vinstall.alwiz.util.DebugLog
 import com.vinstall.alwiz.settings.DialogHelper
@@ -48,12 +52,14 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.applySystemBarInsets()
 
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        bindFloatingNav(binding.floatingNav, FloatingNav.Tab.SETTINGS)
         supportActionBar?.title = getString(R.string.settings)
 
         Shizuku.addBinderReceivedListenerSticky(shizukuBinderReceivedListener)
@@ -61,6 +67,23 @@ class SettingsActivity : AppCompatActivity() {
 
         loadCurrentSettings()
         setupListeners()
+        setupAnimations(savedInstanceState == null)
+    }
+
+    private fun setupAnimations(playEntrance: Boolean) {
+        listOf(
+            binding.layoutLanguage,
+            binding.layoutTheme,
+            binding.layoutDialogStyle,
+            binding.layoutCredits,
+            binding.btnViewHistory,
+            binding.btnClearHistory,
+            binding.btnViewCrashLog,
+            binding.btnClearCrashLog,
+            binding.btnRequestShizuku
+        ).forEach { it.applyPressAnimation(0.97f) }
+
+        if (playEntrance) binding.settingsContent.staggerChildren()
     }
 
     override fun onResume() {
@@ -83,7 +106,7 @@ class SettingsActivity : AppCompatActivity() {
         updateModeUI(mode)
 
         binding.switchDebugWindow.isChecked = AppSettings.isDebugWindowEnabled(this)
-        binding.switchClearCache.isChecked = AppSettings.isClearCacheAfterInstall(this)
+        binding.switchAutoClearCache.isChecked = AppSettings.isAutoClearCache(this)
         binding.switchConfirmInstall.isChecked = AppSettings.isConfirmInstall(this)
 
         val dialogStyle = AppSettings.getDialogStyle(this)
@@ -93,6 +116,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         val theme = AppSettings.getTheme(this)
+        binding.textCurrentLanguage.text = languageLabels()[currentLanguageIndex()]
         binding.textCurrentTheme.text = when (theme) {
             "light" -> getString(R.string.theme_light)
             "dark" -> getString(R.string.theme_dark)
@@ -100,15 +124,12 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         refreshStatusLabels()
-        refreshCrashLogStatus()
-        refreshHistoryStatus()
     }
 
     private fun updateModeUI(mode: InstallMode) {
         binding.radioBtnNormal.isChecked = mode == InstallMode.NORMAL
         binding.radioBtnRoot.isChecked = mode == InstallMode.ROOT
         binding.radioBtnShizuku.isChecked = mode == InstallMode.SHIZUKU
-        DebugLog.d("Settings", "Mode UI updated: $mode")
     }
 
     private fun refreshStatusLabels() {
@@ -145,24 +166,28 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun refreshHistoryStatus() {
-        val count = InstallHistoryManager.count(this)
-        binding.textHistoryStatus.text = if (count > 0)
-            getString(R.string.history_entry_count, count)
-        else
-            getString(R.string.history_empty)
-        binding.btnViewHistory.isEnabled = count > 0
-        binding.btnClearHistory.isEnabled = count > 0
+        lifecycleScope.launch {
+            val count = withContext(Dispatchers.IO) { InstallHistoryManager.count(this@SettingsActivity) }
+            binding.textHistoryStatus.text = if (count > 0)
+                getString(R.string.history_entry_count, count)
+            else
+                getString(R.string.history_empty)
+            binding.btnViewHistory.isEnabled = count > 0
+            binding.btnClearHistory.isEnabled = count > 0
+        }
     }
 
     private fun refreshCrashLogStatus() {
-        val count = CrashHandler.crashLogEntryCount(this)
-        val hasLog = count > 0
-        binding.textCrashLogStatus.text = if (hasLog)
-            getString(R.string.crash_log_has_entries, count)
-        else
-            getString(R.string.crash_log_empty)
-        binding.btnViewCrashLog.isEnabled = hasLog
-        binding.btnClearCrashLog.isEnabled = hasLog
+        lifecycleScope.launch {
+            val count = withContext(Dispatchers.IO) { CrashHandler.crashLogEntryCount(this@SettingsActivity) }
+            val hasLog = count > 0
+            binding.textCrashLogStatus.text = if (hasLog)
+                getString(R.string.crash_log_has_entries, count)
+            else
+                getString(R.string.crash_log_empty)
+            binding.btnViewCrashLog.isEnabled = hasLog
+            binding.btnClearCrashLog.isEnabled = hasLog
+        }
     }
 
     private fun setupListeners() {
@@ -172,6 +197,7 @@ class SettingsActivity : AppCompatActivity() {
                 R.id.radio_btn_shizuku -> InstallMode.SHIZUKU
                 else -> InstallMode.NORMAL
             }
+            if (mode == AppSettings.getInstallMode(this)) return@setOnCheckedChangeListener
             AppSettings.setInstallMode(this, mode)
             DebugLog.i("Settings", "Install mode changed to: $mode")
             refreshStatusLabels()
@@ -193,24 +219,30 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.switchDebugWindow.setOnCheckedChangeListener { _, checked ->
+            binding.floatingNav.setDebugVisible(checked)
             AppSettings.setDebugWindowEnabled(this, checked)
             DebugLog.i("Settings", "Debug window: $checked")
         }
 
-        binding.switchClearCache.setOnCheckedChangeListener { _, checked ->
-            AppSettings.setClearCacheAfterInstall(this, checked)
+        binding.switchAutoClearCache.setOnCheckedChangeListener { _, checked ->
+            AppSettings.setAutoClearCache(this, checked)
         }
 
         binding.switchConfirmInstall.setOnCheckedChangeListener { _, checked ->
             AppSettings.setConfirmInstall(this, checked)
         }
 
+        binding.layoutLanguage.setOnClickListener { showLanguageDialog() }
         binding.layoutTheme.setOnClickListener {
             showThemeDialog()
         }
 
         binding.layoutDialogStyle.setOnClickListener {
             showDialogStyleDialog()
+        }
+
+        binding.layoutCredits.setOnClickListener {
+            startActivity(android.content.Intent(this, CreditsActivity::class.java))
         }
 
         binding.btnViewHistory.setOnClickListener {
@@ -234,12 +266,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.btnViewCrashLog.setOnClickListener {
-            val log = CrashHandler.readCrashLogTail(this)
-            if (log.isNullOrBlank()) {
-                Toast.makeText(this, getString(R.string.crash_log_empty), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            showCrashLogDialog(log)
+            startActivity(android.content.Intent(this, CrashLogActivity::class.java))
         }
 
         binding.btnClearCrashLog.setOnClickListener {
@@ -259,68 +286,82 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun showCrashLogDialog(log: String) {
-        val tv = TextView(this).apply {
-            text = log
-            textSize = 10.5f
-            setPadding(32, 24, 32, 24)
-            setTextIsSelectable(true)
-            typeface = android.graphics.Typeface.MONOSPACE
-        }
-        val scroll = ScrollView(this).apply { addView(tv) }
+    private val languageTags = arrayOf("", "en", "in", "ru", "zh")
 
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.crash_log_title))
-            .setView(scroll)
-            .setPositiveButton(getString(R.string.crash_log_copy)) { _, _ ->
-                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("VInstall Crash Log", log))
-                Toast.makeText(this, getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+    private fun currentLanguageIndex(): Int {
+        val locales = AppCompatDelegate.getApplicationLocales()
+        if (locales.isEmpty) return 0
+        val tag = locales.get(0)?.language.orEmpty()
+        val normalized = if (tag == "id") "in" else tag
+        return languageTags.indexOf(normalized).coerceAtLeast(0)
+    }
+
+    private fun languageLabels(): Array<String> = arrayOf(
+        getString(R.string.language_system),
+        getString(R.string.language_en),
+        getString(R.string.language_in),
+        getString(R.string.language_ru),
+        getString(R.string.language_zh)
+    )
+
+    private fun showLanguageDialog() {
+        DialogHelper.showSingleChoice(
+            activity = this,
+            title = getString(R.string.choose_language),
+            items = languageLabels().toList(),
+            selectedIndex = currentLanguageIndex(),
+            cancelLabel = getString(R.string.cancel),
+        ) { which ->
+            val tag = languageTags[which]
+            val locales = if (tag.isEmpty()) {
+                LocaleListCompat.getEmptyLocaleList()
+            } else {
+                LocaleListCompat.forLanguageTags(if (tag == "in") "id" else tag)
             }
-            .setNegativeButton(getString(R.string.crash_log_close), null)
-            .show()
+            AppCompatDelegate.setApplicationLocales(locales)
+        }
     }
 
     private fun showDialogStyleDialog() {
-        val styles = arrayOf(
+        val styles = listOf(
             getString(R.string.dialog_style_bottom_sheet),
             getString(R.string.dialog_style_alert_dialog)
         )
         val keys = arrayOf(DialogStyle.BOTTOM_SHEET, DialogStyle.ALERT_DIALOG)
-        val current = AppSettings.getDialogStyle(this)
-        val idx = keys.indexOf(current).coerceAtLeast(0)
+        val idx = keys.indexOf(AppSettings.getDialogStyle(this)).coerceAtLeast(0)
 
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.choose_dialog_style))
-            .setSingleChoiceItems(styles, idx) { dialog, which ->
-                AppSettings.setDialogStyle(this, keys[which])
-                binding.textCurrentDialogStyle.text = styles[which]
-                dialog.dismiss()
-            }
-            .setNegativeButton(getString(R.string.cancel), null)
-            .show()
+        DialogHelper.showSingleChoice(
+            activity = this,
+            title = getString(R.string.choose_dialog_style),
+            items = styles,
+            selectedIndex = idx,
+            cancelLabel = getString(R.string.cancel),
+        ) { which ->
+            AppSettings.setDialogStyle(this, keys[which])
+            binding.textCurrentDialogStyle.text = styles[which]
+        }
     }
 
     private fun showThemeDialog() {
-        val themes = arrayOf(
+        val themes = listOf(
             getString(R.string.theme_system),
             getString(R.string.theme_light),
             getString(R.string.theme_dark)
         )
         val keys = arrayOf("system", "light", "dark")
-        val current = AppSettings.getTheme(this)
-        val idx = keys.indexOf(current).coerceAtLeast(0)
+        val idx = keys.indexOf(AppSettings.getTheme(this)).coerceAtLeast(0)
 
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.choose_theme))
-            .setSingleChoiceItems(themes, idx) { dialog, which ->
-                AppSettings.setTheme(this, keys[which])
-                binding.textCurrentTheme.text = themes[which]
-                applyTheme(keys[which])
-                dialog.dismiss()
-            }
-            .setNegativeButton(getString(R.string.cancel), null)
-            .show()
+        DialogHelper.showSingleChoice(
+            activity = this,
+            title = getString(R.string.choose_theme),
+            items = themes,
+            selectedIndex = idx,
+            cancelLabel = getString(R.string.cancel),
+        ) { which ->
+            AppSettings.setTheme(this, keys[which])
+            binding.textCurrentTheme.text = themes[which]
+            applyTheme(keys[which])
+        }
     }
 
     private fun applyTheme(theme: String) {

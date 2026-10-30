@@ -39,14 +39,22 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
     var appInstallInfo: AppInstallInfo? = null
     var onConfirm: (() -> Unit)? = null
     var onDismissed: (() -> Unit)? = null
+    private var confirmed = false
+    private val keepOpenAfterConfirm get() = appInstallInfo != null && onDismissed != null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = BottomSheetConfirmBinding.inflate(inflater, container, false)
         return binding.root
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (onConfirm == null) dismissAllowingStateLoss()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (onConfirm == null) return
 
         binding.textTitle.text = title
         binding.btnPositive.text = positiveLabel
@@ -86,20 +94,39 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
             binding.textMessage.isVisible = message.isNotEmpty()
         }
 
-        val positiveColor = if (isDangerous) {
+        val container = if (isDangerous) {
             MaterialColors.getColor(binding.btnPositive, androidx.appcompat.R.attr.colorError)
         } else {
             MaterialColors.getColor(binding.btnPositive, androidx.appcompat.R.attr.colorPrimary)
         }
-        binding.btnPositive.backgroundTintList = ColorStateList.valueOf(positiveColor)
-        binding.btnPositive.setTextColor(android.graphics.Color.WHITE)
+        val onContainer = if (isDangerous) {
+            MaterialColors.getColor(binding.btnPositive, com.google.android.material.R.attr.colorOnError)
+        } else {
+            MaterialColors.getColor(binding.btnPositive, com.google.android.material.R.attr.colorOnPrimary)
+        }
+        binding.btnPositive.backgroundTintList = ColorStateList.valueOf(container)
+        binding.btnPositive.setTextColor(onContainer)
 
         binding.btnPositive.setOnClickListener {
+            confirmed = true
             onConfirm?.invoke()
-            dismiss()
+            if (!keepOpenAfterConfirm) dismiss()
         }
 
         binding.btnNegative.setOnClickListener { dismiss() }
+
+        binding.btnPositive.applyPressAnimation()
+        binding.btnNegative.applyPressAnimation()
+
+        if (savedInstanceState == null) {
+            listOf<View>(
+                binding.textTitle,
+                binding.layoutAppInfo,
+                binding.textMessage,
+                binding.btnPositive,
+                binding.btnNegative
+            ).staggerIn()
+        }
     }
 
     private fun buildVersionLine(info: AppInstallInfo): String {
@@ -108,6 +135,9 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
 
     fun setInstalling(step: String, progress: Float) {
         val b = _binding ?: return
+        if (!b.layoutProgress.isVisible) {
+            android.transition.TransitionManager.beginDelayedTransition(b.root)
+        }
         b.btnPositive.isVisible = false
         b.btnNegative.isVisible = false
         b.layoutProgress.isVisible = true
@@ -136,7 +166,7 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
 
     override fun onDismiss(dialog: android.content.DialogInterface) {
         super.onDismiss(dialog)
-        onDismissed?.invoke()
+        if (!confirmed) onDismissed?.invoke()
     }
 
     override fun onDestroyView() {

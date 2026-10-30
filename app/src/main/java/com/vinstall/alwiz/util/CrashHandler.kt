@@ -1,14 +1,12 @@
 package com.vinstall.alwiz.util
 
-import android.app.Activity
-import android.content.ClipData
-import android.content.ClipboardManager
+import com.vinstall.alwiz.R
 import android.content.Context
+import android.content.Intent
 import android.os.Build
-import android.widget.ScrollView
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentActivity
+import com.vinstall.alwiz.crash.CrashLogActivity
+import com.vinstall.alwiz.model.CrashEntry
 import com.vinstall.alwiz.settings.DialogHelper
 import java.io.File
 import java.text.SimpleDateFormat
@@ -25,7 +23,7 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
 
     private const val MAX_LOG_ENTRIES = 50
 
-    private const val UI_TAIL_ENTRIES = 10
+    private const val STACK_TRACE_HEADER = "--- Stack Trace ---"
 
     private val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
 
@@ -59,60 +57,44 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
     }
 
     fun showCrashDialogIfNeeded(activity: FragmentActivity) {
-        val report = readAndClearPending(activity) ?: return
+        readAndClearPending(activity) ?: return
 
         DialogHelper.showConfirmation(
             activity = activity,
-            title = "Crash Detected",
-            message = "VInstall crashed on the previous session. The report has been saved to Settings → Crash Reports.",
-            positiveLabel = "View Report",
-            negativeLabel = "Dismiss",
-            onConfirm = { showReportDialog(activity, report) }
+            title = activity.getString(R.string.crash_detected_title),
+            message = activity.getString(R.string.crash_detected_message),
+            positiveLabel = activity.getString(R.string.crash_view_report),
+            negativeLabel = activity.getString(R.string.dismiss),
+            onConfirm = {
+                activity.startActivity(Intent(activity, CrashLogActivity::class.java))
+            }
         )
     }
 
-    private fun showReportDialog(activity: Activity, report: String) {
-        val tv = TextView(activity).apply {
-            text = report
-            textSize = 11f
-            setPadding(32, 24, 32, 24)
-            setTextIsSelectable(true)
-            typeface = android.graphics.Typeface.MONOSPACE
-        }
-        val scroll = ScrollView(activity).apply { addView(tv) }
-
-        AlertDialog.Builder(activity)
-            .setTitle("Crash Report")
-            .setView(scroll)
-            .setPositiveButton("Copy") { _, _ ->
-                val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("VInstall Crash Report", report))
-            }
-            .setNegativeButton("Close", null)
-            .show()
+    @Synchronized
+    private fun readRawEntries(context: Context): List<String> {
+        val file = File(context.filesDir, CRASH_LOG_FILE)
+        if (!file.exists()) return emptyList()
+        return file.readText(Charsets.UTF_8)
+            .split(ENTRY_SEPARATOR)
+            .filter { it.isNotBlank() }
     }
 
+    @Synchronized
+    private fun writeRawEntries(context: Context, entries: List<String>) {
+        val file = File(context.filesDir, CRASH_LOG_FILE)
+        if (entries.isEmpty()) {
+            file.delete()
+        } else {
+            file.writeText(entries.joinToString(ENTRY_SEPARATOR), Charsets.UTF_8)
+        }
+    }
+
+    @Synchronized
     private fun appendToPersistentLog(context: Context, report: String) {
-        val logFile = File(context.filesDir, CRASH_LOG_FILE)
-
-        val entries: MutableList<String> = if (logFile.exists()) {
-            logFile.readText(Charsets.UTF_8)
-                .split(ENTRY_SEPARATOR)
-                .filter { it.isNotBlank() }
-                .toMutableList()
-        } else {
-            mutableListOf()
-        }
-
+        val entries = readRawEntries(context).toMutableList()
         entries.add(report)
-
-        val trimmed = if (entries.size > MAX_LOG_ENTRIES) {
-            entries.takeLast(MAX_LOG_ENTRIES)
-        } else {
-            entries
-        }
-
-        logFile.writeText(trimmed.joinToString(ENTRY_SEPARATOR), Charsets.UTF_8)
+        writeRawEntries(context, entries.takeLast(MAX_LOG_ENTRIES))
     }
 
     fun hasCrashLog(context: Context): Boolean {
@@ -120,38 +102,52 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         return f.exists() && f.length() > 0
     }
 
-    fun readCrashLogTail(context: Context, maxEntries: Int = UI_TAIL_ENTRIES): String? {
-        val file = File(context.filesDir, CRASH_LOG_FILE)
-        if (!file.exists()) return null
+    fun crashLogEntryCount(context: Context): Int = readRawEntries(context).size
 
-        val entries = file.readText(Charsets.UTF_8)
-            .split(ENTRY_SEPARATOR)
-            .filter { it.isNotBlank() }
+    fun readEntries(context: Context): List<CrashEntry> =
+        readRawEntries(context).map { parseEntry(it) }.asReversed()
 
-        if (entries.isEmpty()) return null
-
-        val tail = entries.takeLast(maxEntries)
-        val header = if (entries.size > maxEntries) {
-            "[ Showing ${tail.size} of ${entries.size} entries — oldest entries trimmed ]\n\n"
-        } else {
-            ""
-        }
-
-        return header + tail.joinToString(ENTRY_SEPARATOR)
-    }
-
-    fun crashLogEntryCount(context: Context): Int {
-        val file = File(context.filesDir, CRASH_LOG_FILE)
-        if (!file.exists()) return 0
-        return file.readText(Charsets.UTF_8)
-            .split(ENTRY_SEPARATOR)
-            .count { it.isNotBlank() }
+    @Synchronized
+    fun removeEntry(context: Context, entry: CrashEntry): Boolean {
+        val entries = readRawEntries(context).toMutableList()
+        val index = entries.indexOf(entry.report)
+        if (index < 0) return false
+        entries.removeAt(index)
+        writeRawEntries(context, entries)
+        return true
     }
 
     fun clearCrashLog(context: Context) {
-        File(context.filesDir, CRASH_LOG_FILE).delete()
+        writeRawEntries(context, emptyList())
     }
 
+    private fun parseEntry(report: String): CrashEntry {
+        fun field(prefix: String): String =
+            report.lineSequence()
+                .firstOrNull { it.startsWith(prefix) }
+                ?.substringAfter(':')
+                ?.trim()
+                .orEmpty()
+
+        val exceptionLine = report.lineSequence()
+            .dropWhile { it.trim() != STACK_TRACE_HEADER }
+            .drop(1)
+            .firstOrNull { it.isNotBlank() }
+            .orEmpty()
+            .trim()
+
+        val type = exceptionLine.substringBefore(':').trim().substringAfterLast('.')
+        val message = if (exceptionLine.contains(':')) exceptionLine.substringAfter(':').trim() else ""
+
+        return CrashEntry(
+            time = field("Time").substringBefore('.'),
+            thread = field("Thread"),
+            device = field("Device"),
+            exceptionType = type.ifEmpty { "Unknown" },
+            exceptionMessage = message,
+            report = report
+        )
+    }
 
     private fun buildReport(thread: Thread, throwable: Throwable): String {
         val sb = StringBuilder()
@@ -162,7 +158,7 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         sb.appendLine("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
         sb.appendLine("ABI    : ${Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"}")
         sb.appendLine()
-        sb.appendLine("--- Stack Trace ---")
+        sb.appendLine(STACK_TRACE_HEADER)
         sb.appendLine(android.util.Log.getStackTraceString(throwable))
 
         var cause = throwable.cause

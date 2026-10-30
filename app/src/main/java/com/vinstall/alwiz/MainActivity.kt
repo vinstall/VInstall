@@ -1,44 +1,51 @@
 package com.vinstall.alwiz
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.vinstall.alwiz.appmanager.AppManagerActivity
 import com.vinstall.alwiz.backup.BackupActivity
 import com.vinstall.alwiz.databinding.ActivityMainBinding
+import com.vinstall.alwiz.history.InstallHistoryActivity
 import com.vinstall.alwiz.model.InstallState
 import com.vinstall.alwiz.model.PackageFormat
 import com.vinstall.alwiz.settings.AppSettings
 import com.vinstall.alwiz.settings.DialogHelper
 import com.vinstall.alwiz.settings.InstallMode
 import com.vinstall.alwiz.settings.SettingsActivity
-import com.vinstall.alwiz.history.InstallHistoryActivity
 import com.vinstall.alwiz.shizuku.ShizukuHelper
 import com.vinstall.alwiz.ui.ConfirmationBottomSheet
+import com.vinstall.alwiz.ui.FloatingNav
+import com.vinstall.alwiz.ui.bindFloatingNav
+import com.vinstall.alwiz.ui.StorageAccess
+import com.vinstall.alwiz.ui.applySystemBarInsets
 import com.vinstall.alwiz.util.CrashHandler
 import com.vinstall.alwiz.util.DebugLog
 import com.vinstall.alwiz.util.FileUtil
 import com.vinstall.alwiz.util.NotificationHelper
+import com.vinstall.alwiz.util.PackageVersions
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 
@@ -46,10 +53,14 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
+    private val storageAccess = StorageAccess(this)
 
     private var shizukuPermissionPending = false
     private var isActivityResumed = false
-    private var isQueueMode = false
+    private var lastBatchTotal = 0
+    private var lastHandledSuccess: InstallState.Success? = null
+    private var boundFile: InstallState.FileSelected? = null
+    private var passwordDialog: AlertDialog? = null
 
     private lateinit var queueAdapter: QueueFileAdapter
     private lateinit var itemTouchHelper: ItemTouchHelper
@@ -76,99 +87,69 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
         when {
-            uris.isEmpty() -> return@registerForActivityResult
-            uris.size == 1 -> {
-                exitQueueMode()
-                viewModel.onFileSelected(uris[0])
-            }
-            else -> enterQueueMode(uris)
+            uris.isEmpty() -> Unit
+            uris.size == 1 -> viewModel.onFileSelected(uris[0])
+            else -> viewModel.buildQueueItems(uris)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.applySystemBarInsets()
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+        bindFloatingNav(binding.floatingNav, FloatingNav.Tab.INSTALL)
 
         NotificationHelper.createChannel(this)
         requestNotificationPermissionIfNeeded()
         CrashHandler.showCrashDialogIfNeeded(this)
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
-        }
-
-        setSupportActionBar(binding.toolbar)
         setupQueueRecycler()
 
         Shizuku.addBinderReceivedListenerSticky(shizukuBinderReceivedListener)
         Shizuku.addBinderDeadListener(shizukuBinderDeadListener)
 
-        binding.btnSelect.setOnClickListener { filePicker.launch(arrayOf("*/*")) }
+        binding.btnSelect.setOnClickListener { pickFiles() }
+        binding.layoutEmptyState.setOnClickListener { pickFiles() }
 
-        lifecycleScope.launch {
-            viewModel.queueItems.collect { newItems ->
-                if (newItems.isEmpty()) return@collect
-                if (newItems.size != queueAdapter.itemCount) {
-                    queueAdapter.setItems(newItems)
-                } else {
-                    newItems.forEach { queueAdapter.updateItem(it) }
-                }
-            }
-        }
-
-        binding.btnInstall.setOnClickListener {
-            if (isQueueMode) {
-                val ordered = queueAdapter.getOrderedItems()
-                if (ordered.isEmpty()) return@setOnClickListener
-                viewModel.enqueueFiles(ordered)
-                exitQueueMode()
-            } else {
-                handleSingleInstallClick()
-            }
-        }
-
+        binding.btnInstall.setOnClickListener { handleInstallClick() }
         binding.btnCancel.setOnClickListener { viewModel.cancelInstall() }
 
         binding.btnSelectSplits.setOnClickListener {
-            viewModel.loadSplitsIfNeeded()
-            showSplitPicker()
-        }
-
-        binding.btnAppManager.setOnClickListener {
-            startActivity(Intent(this, AppManagerActivity::class.java))
-        }
-
-        binding.btnBackup.setOnClickListener {
-            startActivity(Intent(this, BackupActivity::class.java))
-        }
-
-        binding.btnDebug.setOnClickListener {
-            startActivity(Intent(this, DebugWindowActivity::class.java))
-        }
-
-        lifecycleScope.launch { viewModel.state.collect { renderState(it) } }
-
-        lifecycleScope.launch {
-            viewModel.availableSplits.collect { splits ->
-                val hasSplits = (viewModel.state.value as? InstallState.FileSelected)?.hasSplits ?: false
-                binding.btnSelectSplits.isVisible = splits.isNotEmpty() || hasSplits
+            binding.btnSelectSplits.isEnabled = false
+            binding.btnSelectSplits.setText(R.string.select_splits_loading)
+            lifecycleScope.launch {
+                viewModel.ensureSplitsLoaded()
+                render()
+                showSplitPicker()
             }
         }
 
+        binding.rowInstallMode.setOnClickListener { handleModeRowClick() }
+        binding.rowAppManager.setOnClickListener {
+            startActivity(Intent(this, AppManagerActivity::class.java))
+        }
+        binding.rowExport.setOnClickListener {
+            startActivity(Intent(this, BackupActivity::class.java))
+        }
+
         lifecycleScope.launch {
-            viewModel.batchProgress.collect { batch ->
-                if (batch != null) {
-                    binding.textBatchProgress.isVisible = true
-                    val label = if (batch.label.isNotEmpty()) " · ${batch.label}" else ""
-                    binding.textBatchProgress.text = getString(
-                        R.string.batch_progress, batch.current, batch.total
-                    ) + label
-                } else {
-                    binding.textBatchProgress.isVisible = false
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { viewModel.state.collect { render() } }
+                launch { viewModel.queueActive.collect { render() } }
+                launch {
+                    viewModel.queueItems.collect { items ->
+                        queueAdapter.sync(items)
+                        render()
+                    }
                 }
+                launch { viewModel.currentFile.collect { render() } }
+                launch { viewModel.batchProgress.collect { render() } }
+                launch { viewModel.availableSplits.collect { render() } }
+                launch { viewModel.selectedSplits.collect { render() } }
             }
         }
 
@@ -178,6 +159,10 @@ class MainActivity : AppCompatActivity() {
         intent?.data?.let { uri ->
             if (savedInstanceState == null) viewModel.onFileSelected(uri)
         }
+    }
+
+    private fun pickFiles() {
+        filePicker.launch(arrayOf("*/*"))
     }
 
     private fun setupQueueRecycler() {
@@ -190,61 +175,70 @@ class MainActivity : AppCompatActivity() {
         itemTouchHelper.attachToRecyclerView(binding.recyclerQueue)
         binding.recyclerQueue.layoutManager = LinearLayoutManager(this)
         binding.recyclerQueue.adapter = queueAdapter
-        binding.recyclerQueue.isNestedScrollingEnabled = true
+        binding.recyclerQueue.itemAnimator = null
     }
 
-    private fun enterQueueMode(uris: List<Uri>) {
-        isQueueMode = true
-        binding.textQueueLabel.text = getString(R.string.queue_label, uris.size)
-        viewModel.buildQueueItems(uris)
-        binding.layoutEmptyState.isVisible = false
-        binding.layoutFileInfo.isVisible = false
-        binding.layoutQueueInfo.isVisible = true
-        binding.btnInstall.isEnabled = true
-        binding.btnSelect.isEnabled = true
-        binding.btnCancel.isVisible = false
-        binding.btnSelectSplits.isVisible = false
-    }
-
-    private fun exitQueueMode() {
-        isQueueMode = false
-        binding.layoutQueueInfo.isVisible = false
+    private fun handleInstallClick() {
+        if (viewModel.queueActive.value) {
+            val ordered = queueAdapter.getOrderedItems()
+            if (ordered.isEmpty() || ordered.any { it.isEncryptedApkv }) return
+            val hasXapk = ordered.any { PackageFormat.fromFileName(it.displayName) == PackageFormat.XAPK }
+            if (hasXapk && lacksAllFilesAccess()) {
+                storageAccess.promptAllFilesAccess(R.string.storage_permission_rationale)
+                return
+            }
+            lastBatchTotal = ordered.size
+            viewModel.enqueueFiles(ordered)
+            return
+        }
+        handleSingleInstallClick()
     }
 
     private fun handleSingleInstallClick() {
-        if (needsStoragePermission()) {
-            showStoragePermissionDialog()
+        val file = viewModel.currentFile.value ?: return
+        if (file.format == PackageFormat.XAPK && lacksAllFilesAccess()) {
+            storageAccess.promptAllFilesAccess(R.string.storage_permission_rationale)
             return
         }
-        if (AppSettings.isConfirmInstall(this)) {
-            val fileState = viewModel.state.value as? InstallState.FileSelected
-            val installInfo = fileState?.let { s ->
-                if (s.packageName.isNotEmpty()) {
-                    val installed = getInstalledVersionInfo(s.packageName)
-                    ConfirmationBottomSheet.AppInstallInfo(
-                        icon = s.appIcon,
-                        appLabel = s.appLabel,
-                        packageName = s.packageName,
-                        versionName = s.versionName,
-                        versionCode = s.versionCode,
-                        installedVersionName = installed?.first,
-                        installedVersionCode = installed?.second,
-                        minSdk = s.minSdk,
-                        targetSdk = s.targetSdk
-                    )
-                } else null
-            }
-            DialogHelper.showConfirmation(
-                activity = this,
-                title = getString(R.string.confirm_install_title),
-                message = getString(R.string.confirm_install_message),
-                positiveLabel = getString(R.string.install),
-                negativeLabel = getString(R.string.cancel),
-                appInstallInfo = installInfo,
-                onConfirm = { viewModel.install() }
-            )
-        } else {
+        if (!AppSettings.isConfirmInstall(this)) {
             viewModel.install()
+            return
+        }
+        val installInfo = if (file.packageName.isNotEmpty()) {
+            val installed = PackageVersions.installed(this, file.packageName)
+            ConfirmationBottomSheet.AppInstallInfo(
+                icon = file.appIcon,
+                appLabel = file.appLabel,
+                packageName = file.packageName,
+                versionName = file.versionName,
+                versionCode = file.versionCode,
+                installedVersionName = installed?.first,
+                installedVersionCode = installed?.second,
+                minSdk = file.minSdk,
+                targetSdk = file.targetSdk
+            )
+        } else null
+        DialogHelper.showConfirmation(
+            activity = this,
+            title = getString(R.string.confirm_install_title),
+            message = getString(R.string.confirm_install_message),
+            positiveLabel = getString(R.string.install),
+            negativeLabel = getString(R.string.cancel),
+            appInstallInfo = installInfo,
+            onConfirm = { viewModel.install() }
+        )
+    }
+
+    private fun lacksAllFilesAccess(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()
+
+    private fun handleModeRowClick() {
+        val needsShizukuGrant = AppSettings.getInstallMode(this) == InstallMode.SHIZUKU &&
+            ShizukuHelper.isAvailable() && !ShizukuHelper.isGranted()
+        if (needsShizukuGrant) {
+            requestShizukuPermissionManually()
+        } else {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
@@ -254,27 +248,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        val debugEnabled = AppSettings.isDebugWindowEnabled(this)
-        menu.findItem(R.id.action_debug)?.isVisible = debugEnabled
-        val isShizukuMode = AppSettings.getInstallMode(this) == InstallMode.SHIZUKU
-        menu.findItem(R.id.action_request_shizuku)?.isVisible = isShizukuMode
+        menu.findItem(R.id.action_request_shizuku)?.isVisible =
+            AppSettings.getInstallMode(this) == InstallMode.SHIZUKU
         return super.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_settings -> {
-                startActivity(Intent(this, SettingsActivity::class.java))
-                true
-            }
-            R.id.action_history -> {
-                startActivity(Intent(this, InstallHistoryActivity::class.java))
-                true
-            }
-            R.id.action_debug -> {
-                startActivity(Intent(this, DebugWindowActivity::class.java))
-                true
-            }
             R.id.action_request_shizuku -> {
                 requestShizukuPermissionManually()
                 true
@@ -284,8 +264,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkAndRequestShizukuPermission() {
-        val mode = AppSettings.getInstallMode(this)
-        if (mode != InstallMode.SHIZUKU) return
+        if (AppSettings.getInstallMode(this) != InstallMode.SHIZUKU) return
         if (!ShizukuHelper.isAvailable()) return
         if (ShizukuHelper.isGranted()) return
         if (shizukuPermissionPending) return
@@ -314,159 +293,221 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun renderState(state: InstallState) {
-        DebugLog.d("MainActivity", "renderState: ${state::class.simpleName}")
+    private fun colorOnSurfaceVariant(): Int = MaterialColors.getColor(
+        binding.root,
+        com.google.android.material.R.attr.colorOnSurfaceVariant
+    )
+
+    private fun colorError(): Int = MaterialColors.getColor(
+        binding.root,
+        androidx.appcompat.R.attr.colorError
+    )
+
+    private fun render() {
+        val state = viewModel.state.value
+        val queueMode = viewModel.queueActive.value
+        val queue = viewModel.queueItems.value
+        val batch = viewModel.batchProgress.value
+        val file = viewModel.currentFile.value
+
+        val batchRunning = batch != null
+        if (batch != null) lastBatchTotal = batch.total
+        val working = state is InstallState.Analyzing || state is InstallState.Installing
+        val loading = state is InstallState.FileLoading
+        val busy = batchRunning || working || loading
+
+        val showQueue = queueMode
+        val showLoading = !showQueue && loading
+        val showFile = !showQueue && !loading && file != null
+        val showEmpty = !showQueue && !loading && file == null
+
+        binding.layoutEmptyState.isVisible = showEmpty
+        binding.layoutLoading.isVisible = showLoading
+        binding.layoutQueueInfo.isVisible = showQueue
+        binding.layoutFileInfo.isVisible = showFile
+
+        if (showQueue) {
+            binding.textQueueLabel.text = if (queue.isEmpty()) {
+                getString(R.string.analyzing)
+            } else {
+                getString(R.string.queue_label, queue.size)
+            }
+            binding.textQueueHint.isVisible = !batchRunning
+            val lockedCount = queue.count { it.isEncryptedApkv }
+            binding.textQueueWarning.isVisible = lockedCount > 0 && !batchRunning
+            binding.textQueueWarning.text = getString(R.string.queue_locked_hint, lockedCount)
+            queueAdapter.setLocked(batchRunning, if (batch != null) batch.current - 1 else -1)
+        } else {
+            queueAdapter.setLocked(false)
+        }
+
+        if (showFile && file != null) {
+            if (boundFile !== file) {
+                bindFile(file)
+                boundFile = file
+            }
+            binding.btnSelectSplits.isVisible = file.hasSplits
+            binding.btnSelectSplits.isEnabled = !busy
+            val available = viewModel.availableSplits.value
+            binding.btnSelectSplits.text = if (available.isNotEmpty()) {
+                getString(R.string.select_splits_count, viewModel.selectedSplits.value.size, available.size)
+            } else {
+                getString(R.string.select_splits)
+            }
+        } else {
+            boundFile = null
+            binding.btnSelectSplits.isVisible = false
+        }
+
+        var statusText: String? = null
+        var statusColor = colorOnSurfaceVariant()
+        var showProgress = false
+
         when (state) {
-            is InstallState.Idle -> {
-                if (!isQueueMode) {
-                    binding.layoutEmptyState.isVisible = true
-                    binding.layoutFileInfo.isVisible = false
-                }
-                binding.progressBar.isVisible = false
-                binding.textStatus.isVisible = false
-                binding.btnInstall.isEnabled = isQueueMode
-                binding.btnSelectSplits.isVisible = false
-                binding.btnCancel.isVisible = false
-                binding.btnSelect.isEnabled = true
-            }
-            is InstallState.FileLoading -> {
-                exitQueueMode()
-                binding.layoutEmptyState.isVisible = false
-                binding.layoutFileInfo.isVisible = false
-                binding.progressBar.isVisible = true
-                binding.textStatus.isVisible = true
-                binding.textStatus.text = getString(R.string.analyzing)
-                binding.btnInstall.isEnabled = false
-                binding.btnSelect.isEnabled = false
-                binding.btnSelectSplits.isVisible = false
-                binding.btnCancel.isVisible = false
-            }
-            is InstallState.FileSelected -> {
-                binding.layoutEmptyState.isVisible = false
-                binding.layoutFileInfo.isVisible = true
-                binding.textFileName.text = if (state.appLabel.isNotEmpty()) state.appLabel else state.name
-
-                if (state.appIcon != null) {
-                    binding.imageAppIcon.setImageBitmap(state.appIcon)
-                    binding.imageAppIcon.isVisible = true
-                } else {
-                    binding.imageAppIcon.isVisible = false
-                }
-
-                if (state.packageName.isNotEmpty()) {
-                    binding.textPackageMeta.text = getString(R.string.package_meta, state.packageName, state.versionName)
-                    binding.textPackageMeta.isVisible = true
-                } else {
-                    binding.textPackageMeta.isVisible = false
-                }
-
-                if (state.appLabel.isNotEmpty()) {
-                    binding.textFilePath.text = state.name
-                    binding.textFilePath.isVisible = true
-                } else {
-                    binding.textFilePath.isVisible = false
-                }
-
-                binding.textFormat.text = if (state.format == PackageFormat.UNKNOWN)
-                    getString(R.string.unknown) else state.format.label
-                binding.textSize.text = FileUtil.formatSize(state.size)
-
-                if (state.hash.isNotEmpty()) {
-                    binding.textHash.text = state.hash
-                    binding.layoutHash.isVisible = true
-                } else {
-                    binding.layoutHash.isVisible = false
-                }
-
-                binding.progressBar.isVisible = false
-                binding.textStatus.isVisible = false
-                binding.btnInstall.isEnabled = state.format != PackageFormat.UNKNOWN
-                binding.btnSelect.isEnabled = true
-                binding.btnSelectSplits.isVisible = state.hasSplits
-                binding.btnCancel.isVisible = false
-            }
             is InstallState.Analyzing -> {
-                binding.progressBar.isVisible = true
+                showProgress = true
                 binding.progressBar.isIndeterminate = true
-                binding.textStatus.isVisible = true
-                binding.textStatus.text = getString(R.string.analyzing)
-                binding.btnInstall.isEnabled = false
-                binding.btnSelect.isEnabled = false
-                binding.btnSelectSplits.isEnabled = false
-                binding.btnCancel.isVisible = true
+                statusText = getString(R.string.analyzing)
             }
             is InstallState.Installing -> {
-                binding.progressBar.isVisible = true
-                binding.textStatus.isVisible = true
-                binding.textStatus.text = if (state.progress >= 0f) {
-                    val pct = (state.progress * 100).toInt()
-                    "${state.step} ($pct%)"
-                } else {
-                    state.step
-                }
+                showProgress = true
                 if (state.progress >= 0f) {
+                    val pct = (state.progress * 100).toInt()
                     binding.progressBar.isIndeterminate = false
-                    binding.progressBar.setProgressCompat((state.progress * 100).toInt(), true)
+                    binding.progressBar.setProgressCompat(pct, true)
+                    statusText = "${state.step} ($pct%)"
                 } else {
                     binding.progressBar.isIndeterminate = true
+                    statusText = state.step
                 }
-                binding.btnInstall.isEnabled = false
-                binding.btnSelect.isEnabled = false
-                binding.btnCancel.isVisible = true
             }
             is InstallState.Success -> {
-                binding.progressBar.isVisible = false
-                binding.textStatus.isVisible = true
-                binding.textStatus.text = getString(R.string.install_success)
-                binding.btnInstall.isEnabled = false
-                binding.btnSelect.isEnabled = true
-                binding.btnSelectSplits.isEnabled = true
-                binding.btnCancel.isVisible = false
-                if (viewModel.batchProgress.value == null) {
+                statusText = getString(R.string.install_success)
+                statusColor = ContextCompat.getColor(this, R.color.status_ok)
+                if (!batchRunning && lastHandledSuccess !== state) {
+                    lastHandledSuccess = state
                     showInstallSuccessSnackbar(state.packageName)
                 }
             }
             is InstallState.Error -> {
-                binding.progressBar.isVisible = false
-                binding.textStatus.isVisible = true
-                binding.textStatus.text = getString(R.string.install_failed, state.message)
-                binding.btnInstall.isEnabled = true
-                binding.btnSelect.isEnabled = true
-                binding.btnSelectSplits.isEnabled = true
-                binding.btnCancel.isVisible = false
+                statusText = getString(R.string.install_failed, state.message)
+                statusColor = colorError()
             }
             is InstallState.Cancelled -> {
-                binding.progressBar.isVisible = false
-                binding.textStatus.isVisible = true
-                binding.textStatus.text = state.reason
-                binding.btnInstall.isEnabled = true
-                binding.btnSelect.isEnabled = true
-                binding.btnSelectSplits.isEnabled = true
-                binding.btnCancel.isVisible = false
+                statusText = state.reason
+                lastBatchTotal = 0
             }
-            is InstallState.PasswordRequired -> {
-                binding.progressBar.isVisible = false
-                binding.textStatus.isVisible = false
-                binding.btnInstall.isEnabled = false
-                binding.btnSelect.isEnabled = true
-                binding.btnSelectSplits.isEnabled = false
-                binding.btnCancel.isVisible = false
-                showPasswordDialog(state)
+            is InstallState.PasswordRequired -> showPasswordDialog(state)
+            is InstallState.Idle -> {
+                if (lastBatchTotal > 0 && !batchRunning && !queueMode) {
+                    val total = lastBatchTotal
+                    lastBatchTotal = 0
+                    showBatchFinishedSnackbar(total)
+                }
             }
+            else -> Unit
+        }
+
+        if (state !is InstallState.PasswordRequired) {
+            passwordDialog?.dismiss()
+            passwordDialog = null
+        }
+
+        binding.progressBar.isVisible = showProgress
+        binding.textStatus.isVisible = statusText != null
+        binding.textStatus.text = statusText.orEmpty()
+        binding.textStatus.setTextColor(statusColor)
+        binding.textBatchProgress.isVisible = batch != null
+        if (batch != null) {
+            val label = if (batch.label.isNotEmpty()) " · ${batch.label}" else ""
+            binding.textBatchProgress.text =
+                getString(R.string.batch_progress, batch.current, batch.total) + label
+        }
+        binding.btnCancel.isVisible = working || batchRunning
+        binding.layoutStatus.isVisible =
+            showProgress || statusText != null || batch != null || binding.btnCancel.isVisible
+
+        binding.btnSelect.isEnabled = !busy
+
+        binding.btnInstall.text = when {
+            queueMode && queue.size > 1 -> getString(R.string.install_queue, queue.size)
+            !queueMode && (state is InstallState.Error || state is InstallState.Cancelled) ->
+                getString(R.string.retry)
+            else -> getString(R.string.install)
+        }
+        binding.btnInstall.isEnabled = when {
+            queueMode -> !batchRunning && queue.isNotEmpty() && queue.none { it.isEncryptedApkv }
+            else -> !busy && file != null && file.format != PackageFormat.UNKNOWN &&
+                (state is InstallState.FileSelected ||
+                    state is InstallState.Error ||
+                    state is InstallState.Cancelled)
+        }
+    }
+
+    private fun bindFile(file: InstallState.FileSelected) {
+        binding.textFileName.text = file.appLabel.ifEmpty { file.name }
+
+        if (file.appIcon != null) {
+            binding.imageAppIcon.setImageBitmap(file.appIcon)
+            binding.imageAppIcon.isVisible = true
+        } else {
+            binding.imageAppIcon.isVisible = false
+        }
+
+        val titlesParams = binding.layoutFileTitles.layoutParams as android.view.ViewGroup.MarginLayoutParams
+        titlesParams.marginStart = if (file.appIcon != null) {
+            (12 * resources.displayMetrics.density).toInt()
+        } else {
+            0
+        }
+        binding.layoutFileTitles.layoutParams = titlesParams
+
+        if (file.packageName.isNotEmpty()) {
+            binding.textPackageMeta.text =
+                getString(R.string.package_meta, file.packageName, file.versionName)
+            binding.textPackageMeta.isVisible = true
+        } else {
+            binding.textPackageMeta.isVisible = false
+        }
+
+        if (file.appLabel.isNotEmpty()) {
+            binding.textFilePath.text = file.name
+            binding.textFilePath.isVisible = true
+        } else {
+            binding.textFilePath.isVisible = false
+        }
+
+        binding.textFormat.text = if (file.format == PackageFormat.UNKNOWN) {
+            getString(R.string.unknown)
+        } else {
+            file.format.label
+        }
+        binding.textSize.text = FileUtil.formatSize(file.size)
+
+        if (file.hash.isNotEmpty()) {
+            binding.textHash.text = file.hash
+            binding.layoutHash.isVisible = true
+        } else {
+            binding.layoutHash.isVisible = false
         }
     }
 
     private fun showPasswordDialog(state: InstallState.PasswordRequired) {
+        if (passwordDialog?.isShowing == true) return
+
         val dialogView = layoutInflater.inflate(R.layout.dialog_apkv_password, null)
         val layoutPassword = dialogView.findViewById<TextInputLayout>(R.id.layout_password)
         val editPassword = dialogView.findViewById<TextInputEditText>(R.id.edit_password)
 
-        val title = if (state.label.isNotEmpty()) state.label else state.fileName
-        val subtitle = if (state.packageName.isNotEmpty() && state.versionName.isNotEmpty())
-            "${state.packageName} · v${state.versionName}" else state.packageName
+        val title = state.label.ifEmpty { state.fileName }
+        val subtitle = if (state.packageName.isNotEmpty() && state.versionName.isNotEmpty()) {
+            "${state.packageName} · v${state.versionName}"
+        } else {
+            state.packageName
+        }
         dialogView.findViewById<android.widget.TextView>(R.id.text_apkv_info).text = subtitle
 
-        val dialog = AlertDialog.Builder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(title)
             .setView(dialogView)
             .setPositiveButton(getString(R.string.apkv_unlock), null)
@@ -476,17 +517,19 @@ class MainActivity : AppCompatActivity() {
 
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val password = editPassword.text?.toString()?.trim() ?: ""
+                val password = editPassword.text?.toString().orEmpty()
                 if (password.isBlank()) {
                     layoutPassword.error = getString(R.string.apkv_password_empty)
                     return@setOnClickListener
                 }
                 layoutPassword.error = null
+                passwordDialog = null
                 dialog.dismiss()
                 viewModel.submitApkvPassword(password)
             }
         }
 
+        passwordDialog = dialog
         dialog.show()
     }
 
@@ -495,11 +538,14 @@ class MainActivity : AppCompatActivity() {
         val layoutPassword = dialogView.findViewById<TextInputLayout>(R.id.layout_password)
         val editPassword = dialogView.findViewById<TextInputEditText>(R.id.edit_password)
         val title = item.appLabel.ifEmpty { item.displayName }
-        val subtitle = if (item.packageName.isNotEmpty() && item.versionName.isNotEmpty())
-            "${item.packageName} · v${item.versionName}" else item.packageName
+        val subtitle = if (item.packageName.isNotEmpty() && item.versionName.isNotEmpty()) {
+            "${item.packageName} · v${item.versionName}"
+        } else {
+            item.packageName
+        }
         dialogView.findViewById<android.widget.TextView>(R.id.text_apkv_info).text = subtitle
 
-        val dialog = AlertDialog.Builder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(title)
             .setView(dialogView)
             .setPositiveButton(getString(R.string.apkv_unlock), null)
@@ -508,7 +554,7 @@ class MainActivity : AppCompatActivity() {
 
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val password = editPassword.text?.toString()?.trim() ?: ""
+                val password = editPassword.text?.toString().orEmpty()
                 if (password.isBlank()) {
                     layoutPassword.error = getString(R.string.apkv_password_empty)
                     return@setOnClickListener
@@ -529,18 +575,45 @@ class MainActivity : AppCompatActivity() {
 
     private fun showSplitPicker() {
         val splits = viewModel.availableSplits.value
-        val selected = viewModel.selectedSplits.value.toMutableList()
-        val checkedItems = splits.map { selected.contains(it) }.toBooleanArray()
+        if (splits.isEmpty()) return
+        val selected = viewModel.selectedSplits.value
+        val checkedItems = BooleanArray(splits.size) { selected.contains(splits[it]) }
 
-        AlertDialog.Builder(this)
+        lateinit var dialog: AlertDialog
+
+        fun refreshPositive() {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled =
+                viewModel.selectedSplits.value.isNotEmpty()
+        }
+
+        dialog = MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.select_splits))
             .setMultiChoiceItems(splits.toTypedArray(), checkedItems) { _, which, isChecked ->
                 viewModel.toggleSplit(splits[which], isChecked)
+                refreshPositive()
             }
             .setPositiveButton(getString(R.string.ok), null)
-            .setNeutralButton(getString(R.string.select_all)) { _, _ -> viewModel.selectAllSplits() }
-            .setNegativeButton(getString(R.string.deselect_all)) { _, _ -> viewModel.deselectAllSplits() }
-            .show()
+            .setNeutralButton(getString(R.string.select_all), null)
+            .setNegativeButton(getString(R.string.deselect_all), null)
+            .create()
+
+        dialog.setOnShowListener {
+            val list = dialog.listView
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                viewModel.selectAllSplits()
+                for (index in splits.indices) list.setItemChecked(index, true)
+                refreshPositive()
+            }
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+                viewModel.deselectAllSplits()
+                for (index in splits.indices) list.setItemChecked(index, false)
+                refreshPositive()
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener { dialog.dismiss() }
+            refreshPositive()
+        }
+
+        dialog.show()
     }
 
     private fun updateInstallModeStatus() {
@@ -548,63 +621,47 @@ class MainActivity : AppCompatActivity() {
         val shizukuAvail = ShizukuHelper.isAvailable()
         val shizukuGranted = ShizukuHelper.isGranted()
 
-        val modeLabel = when (mode) {
+        binding.textInstallModeStatus.text = when (mode) {
             InstallMode.NORMAL -> getString(R.string.mode_normal)
             InstallMode.ROOT -> getString(R.string.mode_root)
             InstallMode.SHIZUKU -> getString(R.string.mode_shizuku)
         }
 
-        binding.textInstallModeStatus.text = when (mode) {
-            InstallMode.SHIZUKU -> when {
-                !shizukuAvail -> "$modeLabel — ${getString(R.string.shizuku_inactive)}"
-                !shizukuGranted -> "$modeLabel — ${getString(R.string.shizuku_needs_grant)}"
-                else -> "$modeLabel — ${getString(R.string.shizuku_active)}"
+        val detail = if (mode == InstallMode.SHIZUKU) {
+            when {
+                !shizukuAvail -> getString(R.string.shizuku_inactive)
+                !shizukuGranted -> getString(R.string.shizuku_tap_to_grant)
+                else -> getString(R.string.shizuku_active)
             }
-            else -> modeLabel
-        }
+        } else null
+        binding.textInstallModeDetail.isVisible = detail != null
+        binding.textInstallModeDetail.text = detail.orEmpty()
 
+        val ready = mode != InstallMode.SHIZUKU || (shizukuAvail && shizukuGranted)
         binding.installModeDot.setBackgroundResource(
-            when (mode) {
-                InstallMode.NORMAL, InstallMode.ROOT -> R.drawable.dot_active
-                InstallMode.SHIZUKU -> if (shizukuAvail && shizukuGranted) R.drawable.dot_active else R.drawable.dot_pending
-            }
+            if (ready) R.drawable.dot_active else R.drawable.dot_pending
         )
-    }
-
-    private fun getInstalledVersionInfo(packageName: String): Pair<String, Long>? {
-        return try {
-            val pm = packageManager
-            val pi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-            } else {
-                @Suppress("DEPRECATION")
-                pm.getPackageInfo(packageName, 0)
-            }
-            val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                pi.longVersionCode
-            } else {
-                @Suppress("DEPRECATION")
-                pi.versionCode.toLong()
-            }
-            Pair(pi.versionName ?: "", code)
-        } catch (_: Exception) {
-            null
-        }
     }
 
     private fun showInstallSuccessSnackbar(packageName: String) {
         val snackbar = Snackbar.make(binding.root, getString(R.string.install_success), Snackbar.LENGTH_LONG)
-        if (packageName.isNotEmpty() && canLaunchPackage(packageName)) {
+            .setAnchorView(binding.layoutBottomBar)
+        if (packageName.isNotEmpty() && packageManager.getLaunchIntentForPackage(packageName) != null) {
             snackbar.setAction(getString(R.string.open_app)) {
-                val launch = packageManager.getLaunchIntentForPackage(packageName)
-                if (launch != null) startActivity(launch)
+                packageManager.getLaunchIntentForPackage(packageName)?.let { startActivity(it) }
             }
         }
         snackbar.show()
     }
 
-    private fun canLaunchPackage(packageName: String): Boolean =
-        packageManager.getLaunchIntentForPackage(packageName) != null
+    private fun showBatchFinishedSnackbar(total: Int) {
+        Snackbar.make(binding.root, getString(R.string.batch_finished, total), Snackbar.LENGTH_LONG)
+            .setAnchorView(binding.layoutBottomBar)
+            .setAction(getString(R.string.view_history_short)) {
+                startActivity(Intent(this, InstallHistoryActivity::class.java))
+            }
+            .show()
+    }
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -616,37 +673,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun needsStoragePermission(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
-        val state = viewModel.state.value
-        if (state is InstallState.FileSelected && state.format == PackageFormat.XAPK) {
-            return !Environment.isExternalStorageManager()
-        }
-        return false
-    }
-
-    private fun showStoragePermissionDialog() {
-        DialogHelper.showConfirmation(
-            activity = this,
-            title = getString(R.string.permission_required),
-            message = getString(R.string.storage_permission_rationale),
-            positiveLabel = getString(R.string.grant_permission),
-            negativeLabel = getString(R.string.cancel),
-            onConfirm = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
-                }
-            }
-        )
-    }
-
     override fun onResume() {
         super.onResume()
         isActivityResumed = true
         updateInstallModeStatus()
         checkAndRequestShizukuPermission()
-        binding.btnDebug.isVisible = AppSettings.isDebugWindowEnabled(this)
         invalidateOptionsMenu()
+        binding.floatingNav.setDebugVisible(AppSettings.isDebugWindowEnabled(this))
     }
 
     override fun onPause() {
@@ -656,6 +689,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        passwordDialog?.dismiss()
+        passwordDialog = null
         Shizuku.removeBinderReceivedListener(shizukuBinderReceivedListener)
         Shizuku.removeBinderDeadListener(shizukuBinderDeadListener)
         ShizukuHelper.removePermissionListener(shizukuPermissionListener)
