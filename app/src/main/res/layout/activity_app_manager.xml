@@ -12,6 +12,12 @@
         android:minHeight="?attr/actionBarSize"
         app:title="@string/app_manager" />
 
+    <include
+        android:id="@+id/export_banner"
+        layout="@layout/view_export_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <com.google.android.material.textfield.TextInputLayout
         style="@style/Widget.Material3.TextInputLayout.FilledBox.Dense"
         app:boxBackgroundColor="?attr/colorSurfaceContainer"
@@ -133,6 +139,7 @@
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:contentDescription="@string/loading_desc"
             android:id="@+id/progress_bar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

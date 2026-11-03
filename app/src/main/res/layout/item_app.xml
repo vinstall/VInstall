@@ -11,7 +11,7 @@
     android:clickable="true"
     android:focusable="true"
     android:gravity="center_vertical"
-    android:minHeight="72dp"
+    android:minHeight="?attr/vTouch72"
     android:orientation="horizontal"
     android:paddingStart="16dp"
     android:paddingTop="10dp"

@@ -44,7 +44,7 @@ class ExportBottomSheet : BottomSheetDialogFragment() {
 
         binding.checkboxEncrypt.setOnCheckedChangeListener { _, checked ->
             if (checked) {
-                android.transition.TransitionManager.beginDelayedTransition(binding.cardOptions)
+                beginDelayedTransitionIfAllowed(binding.cardOptions)
             }
             binding.layoutPassword.isVisible = checked
             if (checked) {

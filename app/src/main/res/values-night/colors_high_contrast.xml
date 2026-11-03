@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="hc_primary">#B3CEFF</color>
+    <color name="hc_on_primary">#001640</color>
+    <color name="hc_primary_container">#12337F</color>
+    <color name="hc_on_primary_container">#FFFFFF</color>
+    <color name="hc_primary_inverse">#0A3699</color>
+    <color name="hc_secondary">#DBE5F8</color>
+    <color name="hc_on_secondary">#08101F</color>
+    <color name="hc_secondary_container">#2A3C5B</color>
+    <color name="hc_on_secondary_container">#FFFFFF</color>
+    <color name="hc_error_role">#FFBDB4</color>
+    <color name="hc_on_error_role">#380003</color>
+    <color name="hc_error_container_role">#7A0008</color>
+    <color name="hc_on_error_container_role">#FFFFFF</color>
+    <color name="hc_surface">#000000</color>
+    <color name="hc_on_surface">#FFFFFF</color>
+    <color name="hc_surface_variant">#222B37</color>
+    <color name="hc_on_surface_variant">#EAF0F8</color>
+    <color name="hc_surface_inverse">#FFFFFF</color>
+    <color name="hc_on_surface_inverse">#000000</color>
+    <color name="hc_outline_role">#B4BFD0</color>
+    <color name="hc_outline_variant_role">#6E7A8D</color>
+    <color name="hc_container_lowest">#000000</color>
+    <color name="hc_container_low">#0A0E14</color>
+    <color name="hc_container">#10161E</color>
+    <color name="hc_container_high">#161E28</color>
+    <color name="hc_container_highest">#1D2632</color>
+    <color name="hc_status_ok">#93F2AE</color>
+    <color name="hc_status_warn">#FFCE94</color>
+    <color name="hc_status_blocked">#EBC8FB</color>
+</resources>

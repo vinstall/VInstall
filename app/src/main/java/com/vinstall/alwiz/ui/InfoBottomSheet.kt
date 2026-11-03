@@ -9,7 +9,9 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.vinstall.alwiz.R
 import com.vinstall.alwiz.databinding.BottomSheetInfoBinding
+import com.vinstall.alwiz.model.CallerInfo
 
 class InfoBottomSheet : BottomSheetDialogFragment() {
 
@@ -23,6 +25,8 @@ class InfoBottomSheet : BottomSheetDialogFragment() {
     var primaryLabel: String? = null
     var onPrimary: (() -> Unit)? = null
     var secondaryLabel: String = ""
+    var appInfo: CallerInfo? = null
+    var caller: CallerInfo? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +45,18 @@ class InfoBottomSheet : BottomSheetDialogFragment() {
         binding.textTitle.text = title
         binding.textSubtitle.text = subtitle
         binding.textSubtitle.isVisible = !subtitle.isNullOrBlank()
+
+        appInfo?.icon?.let {
+            binding.imageApp.setImageDrawable(it)
+            binding.imageApp.isVisible = true
+        }
+        caller?.let {
+            bindCallerRow(binding.callerRow.root, it)
+            binding.textCallerState.setText(
+                if (it.trusted) R.string.caller_badge_verified else R.string.caller_badge_untrusted
+            )
+            binding.cardCaller.isVisible = true
+        }
 
         binding.textBody.text = body
         if (monospace) {
@@ -101,6 +117,8 @@ class InfoBottomSheet : BottomSheetDialogFragment() {
             monospace: Boolean = false,
             primaryLabel: String? = null,
             onPrimary: (() -> Unit)? = null,
+            appInfo: CallerInfo? = null,
+            caller: CallerInfo? = null,
         ): InfoBottomSheet {
             return InfoBottomSheet().apply {
                 this.title = title
@@ -110,6 +128,8 @@ class InfoBottomSheet : BottomSheetDialogFragment() {
                 this.secondaryLabel = secondaryLabel
                 this.primaryLabel = primaryLabel
                 this.onPrimary = onPrimary
+                this.appInfo = appInfo
+                this.caller = caller
                 show(fragmentManager, TAG)
             }
         }

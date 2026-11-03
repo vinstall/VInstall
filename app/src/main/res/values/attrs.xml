@@ -1,4 +1,19 @@
 <resources>
+    <attr name="vFontRegular" format="reference|string" />
+    <attr name="vFontMedium" format="reference|string" />
+    <attr name="vFontSemibold" format="reference|string" />
+    <attr name="vFontBold" format="reference|string" />
+    <attr name="vTextStyle" format="integer" />
+    <attr name="vTouch48" format="dimension" />
+    <attr name="vSwitchPadTop" format="dimension" />
+    <attr name="vSwitchPadBottom" format="dimension" />
+    <attr name="vTouch52" format="dimension" />
+    <attr name="vTouch56" format="dimension" />
+    <attr name="vTouch64" format="dimension" />
+    <attr name="vTouch72" format="dimension" />
+    <attr name="vStatusOk" format="color" />
+    <attr name="vStatusWarn" format="color" />
+    <attr name="vStatusBlocked" format="color" />
     <declare-styleable name="MaxHeightRecyclerView">
         <attr name="maxListHeight" format="dimension" />
     </declare-styleable>

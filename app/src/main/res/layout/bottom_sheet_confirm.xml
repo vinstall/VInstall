@@ -28,6 +28,21 @@
                 android:textAppearance="@style/TextAppearance.VInstall.TitleLarge"
                 android:layout_marginBottom="16dp" />
 
+            <include
+                android:id="@+id/layout_source"
+                layout="@layout/layout_caller_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <com.google.android.material.divider.MaterialDivider
+                android:id="@+id/divider_source"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:id="@+id/layout_app_info"
                 android:layout_width="match_parent"
@@ -106,6 +121,7 @@
                     android:layout_marginBottom="8dp" />
 
                 <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:contentDescription="@string/progress_desc"
                     android:id="@+id/progress_install"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -117,7 +133,7 @@
                 android:id="@+id/btn_positive"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp"
+                android:minHeight="?attr/vTouch48"
                 android:layout_marginBottom="8dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -125,7 +141,7 @@
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp" />
+                android:minHeight="?attr/vTouch48" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

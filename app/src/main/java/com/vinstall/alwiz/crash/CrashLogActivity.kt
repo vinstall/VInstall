@@ -1,14 +1,14 @@
 package com.vinstall.alwiz.crash
 
+import com.vinstall.alwiz.ui.showToast
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
+import com.vinstall.alwiz.ui.ScaledActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,7 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class CrashLogActivity : AppCompatActivity() {
+class CrashLogActivity : ScaledActivity() {
 
     private lateinit var binding: ActivityCrashLogBinding
     private lateinit var adapter: CrashLogAdapter
@@ -88,7 +88,7 @@ class CrashLogActivity : AppCompatActivity() {
             onPrimary = {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 clipboard.setPrimaryClip(ClipData.newPlainText("VInstall Crash Report", entry.report))
-                Toast.makeText(this, getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+                showToast(this, getString(R.string.log_copied))
             }
         )
     }
@@ -107,7 +107,7 @@ class CrashLogActivity : AppCompatActivity() {
                     entries.clear()
                     adapter.notifyDataSetChanged()
                     updateEmptyState()
-                    Toast.makeText(this@CrashLogActivity, getString(R.string.crash_log_cleared), Toast.LENGTH_SHORT).show()
+                    showToast(this@CrashLogActivity, getString(R.string.crash_log_cleared))
                 }
             }
         )

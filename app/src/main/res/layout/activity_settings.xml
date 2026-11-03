@@ -60,21 +60,21 @@
                                 android:id="@+id/radio_btn_normal"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:minHeight="48dp"
+                                android:minHeight="?attr/vTouch48"
                                 android:text="@string/mode_normal"
                                 android:textAppearance="@style/TextAppearance.VInstall.BodyLarge" />
                             <com.google.android.material.radiobutton.MaterialRadioButton
                                 android:id="@+id/radio_btn_root"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:minHeight="48dp"
+                                android:minHeight="?attr/vTouch48"
                                 android:text="@string/mode_root"
                                 android:textAppearance="@style/TextAppearance.VInstall.BodyLarge" />
                             <com.google.android.material.radiobutton.MaterialRadioButton
                                 android:id="@+id/radio_btn_shizuku"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:minHeight="48dp"
+                                android:minHeight="?attr/vTouch48"
                                 android:text="@string/mode_shizuku"
                                 android:textAppearance="@style/TextAppearance.VInstall.BodyLarge" />
                         </RadioGroup>
@@ -82,6 +82,8 @@
                             android:id="@+id/text_root_status"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
                             android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                         <TextView
@@ -89,6 +91,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
                             android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                         <com.google.android.material.button.MaterialButton
@@ -96,8 +100,8 @@
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:minHeight="48dp"
+                            android:layout_marginTop="12dp"
+                            android:minHeight="?attr/vTouch48"
                             android:text="@string/shizuku_request_permission"
                             android:visibility="gone" />
                     </LinearLayout>
@@ -121,53 +125,110 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="0dp"
                             android:layout_marginBottom="4dp"
+                            android:id="@+id/title_behavior"
                             android:text="@string/settings_section_behavior"
                             android:textAppearance="@style/TextAppearance.VInstall.TitleSmall"
                             android:textColor="?attr/colorPrimary"
                             android:paddingStart="4dp" />
                         <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switch_confirm_install"
+                            android:id="@+id/switch_silent_install"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:text="@string/settings_confirm_install"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_silent_install"
                             android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
                             android:textColor="?attr/colorOnSurface" />
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
                             android:layout_marginEnd="64dp"
-                            android:text="@string/settings_confirm_install_desc"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_silent_install_desc"
                             android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_hide_notification"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_hide_notification"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_hide_notification_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/switch_auto_clear_cache"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:minHeight="48dp"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
                             android:text="@string/settings_auto_clear_cache"
                             android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
                             android:textColor="?attr/colorOnSurface" />
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
                             android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
                             android:text="@string/settings_auto_clear_cache_desc"
                             android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
                         <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switch_debug_window"
+                            android:id="@+id/switch_debug_tab"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:minHeight="48dp"
-                            android:text="@string/settings_debug_window"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_debug_tab"
                             android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
                             android:textColor="?attr/colorOnSurface" />
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
                             android:layout_marginEnd="64dp"
-                            android:text="@string/settings_debug_window_desc"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_debug_tab_desc"
                             android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
@@ -191,6 +252,324 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="0dp"
                             android:layout_marginBottom="4dp"
+                            android:id="@+id/title_security"
+                            android:text="@string/settings_section_security"
+                            android:textAppearance="@style/TextAppearance.VInstall.TitleSmall"
+                            android:textColor="?attr/colorPrimary"
+                            android:paddingStart="4dp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_silent_external"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_silent_external"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_silent_external_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <LinearLayout
+                            android:id="@+id/layout_trusted_callers"
+                            style="@style/Widget.VInstall.Row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center_vertical"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_trusted_callers"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                            <TextView
+                                android:id="@+id/text_trusted_callers_summary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <LinearLayout
+                            android:id="@+id/layout_blocked_callers"
+                            style="@style/Widget.VInstall.Row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center_vertical"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_blocked_callers"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                            <TextView
+                                android:id="@+id/text_blocked_callers_summary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <LinearLayout
+                            android:id="@+id/layout_untrusted_delay"
+                            style="@style/Widget.VInstall.Row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center_vertical"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_untrusted_delay"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                            <TextView
+                                android:id="@+id/text_untrusted_delay_summary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView
+                    style="?attr/materialCardViewFilledStyle"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="0dp"
+                            android:layout_marginBottom="4dp"
+                            android:id="@+id/title_experimental"
+                            android:text="@string/settings_section_experimental"
+                            android:textAppearance="@style/TextAppearance.VInstall.TitleSmall"
+                            android:textColor="?attr/colorPrimary"
+                            android:paddingStart="4dp" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_allow_incompatible_api"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_allow_incompatible_api"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_allow_incompatible_api_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_allow_downgrade"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_allow_downgrade"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_allow_downgrade_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <LinearLayout
+                            android:id="@+id/layout_downgrade_keep_data"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+                            <View
+                                android:layout_width="3dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginBottom="4dp"
+                                android:background="@drawable/bg_setting_child_guide" />
+                            <LinearLayout
+                                android:id="@+id/content_downgrade_keep_data"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:paddingStart="12dp">
+                                <com.google.android.material.materialswitch.MaterialSwitch
+                                    android:id="@+id/switch_downgrade_keep_data"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingStart="4dp"
+                                    android:paddingTop="?attr/vSwitchPadTop"
+                                    android:paddingEnd="4dp"
+                                    android:paddingBottom="?attr/vSwitchPadBottom"
+                                    android:text="@string/settings_downgrade_keep_data"
+                                    android:textAppearance="@style/TextAppearance.VInstall.BodyMedium"
+                                    android:textColor="?attr/colorOnSurface" />
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="4dp"
+                                    android:layout_marginEnd="64dp"
+                                    android:paddingBottom="14dp"
+                                    android:text="@string/settings_downgrade_keep_data_desc"
+                                    android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
+                            </LinearLayout>
+                        </LinearLayout>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_force_mismatch"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_force_mismatch"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_force_mismatch_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <LinearLayout
+                            android:id="@+id/layout_force_keep_data"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+                            <View
+                                android:layout_width="3dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginBottom="4dp"
+                                android:background="@drawable/bg_setting_child_guide" />
+                            <LinearLayout
+                                android:id="@+id/content_force_keep_data"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:paddingStart="12dp">
+                                <com.google.android.material.materialswitch.MaterialSwitch
+                                    android:id="@+id/switch_force_keep_data"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:paddingStart="4dp"
+                                    android:paddingTop="?attr/vSwitchPadTop"
+                                    android:paddingEnd="4dp"
+                                    android:paddingBottom="?attr/vSwitchPadBottom"
+                                    android:text="@string/settings_force_keep_data"
+                                    android:textAppearance="@style/TextAppearance.VInstall.BodyMedium"
+                                    android:textColor="?attr/colorOnSurface" />
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="4dp"
+                                    android:layout_marginEnd="64dp"
+                                    android:paddingBottom="14dp"
+                                    android:text="@string/settings_force_keep_data_desc"
+                                    android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView
+                    style="?attr/materialCardViewFilledStyle"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="0dp"
+                            android:layout_marginBottom="4dp"
+                            android:id="@+id/title_appearance"
                             android:text="@string/settings_section_appearance"
                             android:textAppearance="@style/TextAppearance.VInstall.TitleSmall"
                             android:textColor="?attr/colorPrimary"
@@ -217,6 +596,13 @@
                                 android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
                         <LinearLayout
                             android:id="@+id/layout_theme"
                             style="@style/Widget.VInstall.Row"
@@ -239,6 +625,13 @@
                                 android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
                         <LinearLayout
                             android:id="@+id/layout_dialog_style"
                             style="@style/Widget.VInstall.Row"
@@ -282,6 +675,310 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="0dp"
                             android:layout_marginBottom="4dp"
+                            android:id="@+id/title_accessibility"
+                            android:text="@string/settings_section_accessibility"
+                            android:textAppearance="@style/TextAppearance.VInstall.TitleSmall"
+                            android:textColor="?attr/colorPrimary"
+                            android:paddingStart="4dp" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="8dp"
+                            android:text="@string/settings_text_size"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_text_scale_system"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="?attr/vTouch48"
+                            android:text="@string/text_size_follow_system"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyMedium"
+                            android:textColor="?attr/colorOnSurface" />
+                        <com.google.android.material.slider.Slider
+                            android:id="@+id/slider_text_scale"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/settings_text_size"
+                            android:stepSize="1"
+                            android:value="1"
+                            android:valueFrom="0"
+                            android:valueTo="3"
+                            app:labelBehavior="gone" />
+                        <TextView
+                            android:id="@+id/text_text_scale_label"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <com.google.android.material.card.MaterialCardView
+                            style="?attr/materialCardViewFilledStyle"
+                            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp">
+                            <TextView
+                                android:id="@+id/text_text_scale_preview"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="12dp"
+                                android:text="@string/text_size_preview"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                        </com.google.android.material.card.MaterialCardView>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <LinearLayout
+                            android:id="@+id/layout_gui_scale"
+                            style="@style/Widget.VInstall.Row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center_vertical"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_gui_scale"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                            <TextView
+                                android:id="@+id/text_current_gui_scale"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <LinearLayout
+                            android:id="@+id/layout_font"
+                            style="@style/Widget.VInstall.Row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center_vertical"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_font"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                            <TextView
+                                android:id="@+id/text_current_font"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <LinearLayout
+                            android:id="@+id/layout_motion"
+                            style="@style/Widget.VInstall.Row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:gravity="center_vertical"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp">
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/settings_motion"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                            <TextView
+                                android:id="@+id/text_current_motion"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="12dp"
+                            android:text="@string/settings_toast_duration"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <com.google.android.material.slider.Slider
+                            android:id="@+id/slider_toast_duration"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/settings_toast_duration"
+                            android:stepSize="1"
+                            android:value="2"
+                            android:valueFrom="1"
+                            android:valueTo="10"
+                            app:labelBehavior="gone" />
+                        <TextView
+                            android:id="@+id/text_toast_duration_label"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingBottom="12dp"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_high_contrast"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_high_contrast"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_high_contrast_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_bold_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_bold_text"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_bold_text_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_large_touch"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_large_touch"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_large_touch_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                        <View
+                            style="@style/Widget.VInstall.Divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:importantForAccessibility="no" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_haptic"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="4dp"
+                            android:paddingTop="?attr/vSwitchPadTop"
+                            android:paddingEnd="4dp"
+                            android:paddingBottom="?attr/vSwitchPadBottom"
+                            android:text="@string/settings_haptic"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="64dp"
+                            android:paddingBottom="14dp"
+                            android:text="@string/settings_haptic_desc"
+                            android:textAppearance="@style/TextAppearance.VInstall.BodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView
+                    style="?attr/materialCardViewFilledStyle"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="0dp"
+                            android:layout_marginBottom="4dp"
+                            android:id="@+id/title_history"
                             android:text="@string/history_title"
                             android:textAppearance="@style/TextAppearance.VInstall.TitleSmall"
                             android:textColor="?attr/colorPrimary"
@@ -290,13 +987,16 @@
                             android:id="@+id/text_history_status"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:paddingTop="4dp"
+                            android:paddingBottom="4dp"
                             android:textAppearance="@style/TextAppearance.VInstall.BodyMedium"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="12dp"
                             android:orientation="horizontal">
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_view_history"
@@ -304,7 +1004,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:minHeight="48dp"
+                                android:minHeight="?attr/vTouch48"
                                 android:text="@string/history_view" />
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_clear_history"
@@ -313,7 +1013,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_weight="1"
-                                android:minHeight="48dp"
+                                android:minHeight="?attr/vTouch48"
                                 android:text="@string/history_clear_all"
                                 android:textColor="?attr/colorError"
                                 app:strokeColor="?attr/colorError" />
@@ -339,6 +1039,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="0dp"
                             android:layout_marginBottom="4dp"
+                            android:id="@+id/title_crash"
                             android:text="@string/settings_section_crash_reports"
                             android:textAppearance="@style/TextAppearance.VInstall.TitleSmall"
                             android:textColor="?attr/colorPrimary"
@@ -347,13 +1048,16 @@
                             android:id="@+id/text_crash_log_status"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:paddingTop="4dp"
+                            android:paddingBottom="4dp"
                             android:textAppearance="@style/TextAppearance.VInstall.BodyMedium"
                             android:textColor="?attr/colorOnSurfaceVariant" />
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="12dp"
                             android:orientation="horizontal">
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_view_crash_log"
@@ -361,7 +1065,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:minHeight="48dp"
+                                android:minHeight="?attr/vTouch48"
                                 android:text="@string/crash_log_view" />
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_clear_crash_log"
@@ -370,7 +1074,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
                                 android:layout_weight="1"
-                                android:minHeight="48dp"
+                                android:minHeight="?attr/vTouch48"
                                 android:text="@string/crash_log_clear"
                                 android:textColor="?attr/colorError"
                                 app:strokeColor="?attr/colorError" />
@@ -395,6 +1099,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="4dp"
+                            android:id="@+id/title_about"
                             android:text="@string/settings_section_about"
                             android:textAppearance="@style/TextAppearance.VInstall.TitleSmall"
                             android:textColor="?attr/colorPrimary"

@@ -76,7 +76,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:minHeight="48dp"
+                    android:minHeight="?attr/vTouch48"
                     android:text="@string/credits_developer_profile" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -120,7 +120,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:minHeight="48dp"
+                    android:minHeight="?attr/vTouch48"
                     android:text="@string/credits_license_osi" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_license_text"
@@ -128,7 +128,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:minHeight="48dp"
+                    android:minHeight="?attr/vTouch48"
                     android:text="@string/credits_license_text" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_source"
@@ -136,7 +136,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:minHeight="48dp"
+                    android:minHeight="?attr/vTouch48"
                     android:text="@string/credits_source_code" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

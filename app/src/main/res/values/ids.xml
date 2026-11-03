@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tag_child_reveal_anim" type="id" />
+    <item name="tag_bounce_marquee" type="id" />
+</resources>

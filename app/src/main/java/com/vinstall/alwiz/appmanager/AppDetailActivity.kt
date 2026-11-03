@@ -1,5 +1,10 @@
 package com.vinstall.alwiz.appmanager
 
+import com.vinstall.alwiz.ui.showToast
+import com.vinstall.alwiz.ui.exportStatusText
+import com.vinstall.alwiz.ui.StatusIcon
+import com.vinstall.alwiz.ui.showStatusIcon
+import com.vinstall.alwiz.ui.statusOk
 import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -14,7 +19,7 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import com.vinstall.alwiz.ui.ScaledActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -31,6 +36,9 @@ import com.vinstall.alwiz.model.AppInfo
 import com.vinstall.alwiz.settings.AppSettings
 import com.vinstall.alwiz.settings.DialogHelper
 import com.vinstall.alwiz.settings.InstallMode
+import com.vinstall.alwiz.timeline.AppTimelineActivity
+import com.vinstall.alwiz.timeline.AppTimelineManager
+import com.vinstall.alwiz.timeline.InstalledState
 import com.vinstall.alwiz.ui.ExportDialog
 import com.vinstall.alwiz.ui.StorageAccess
 import com.vinstall.alwiz.ui.applyPressAnimation
@@ -47,7 +55,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class AppDetailActivity : AppCompatActivity() {
+class AppDetailActivity : ScaledActivity() {
 
     companion object {
         const val EXTRA_PACKAGE_NAME = "extra_package_name"
@@ -64,7 +72,8 @@ class AppDetailActivity : AppCompatActivity() {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             DebugLog.i("AppDetail", "Uninstall successful (normal mode): ${currentApp?.packageName}")
-            Toast.makeText(this, getString(R.string.uninstall_success), Toast.LENGTH_SHORT).show()
+            currentApp?.let { recordNormalUninstall(it) }
+            showToast(this, getString(R.string.uninstall_success))
             finish()
         }
     }
@@ -88,7 +97,7 @@ class AppDetailActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val app = BackupManager.getApp(this@AppDetailActivity, packageName)
             if (app == null) {
-                Toast.makeText(this@AppDetailActivity, getString(R.string.app_not_found), Toast.LENGTH_SHORT).show()
+                showToast(this@AppDetailActivity, getString(R.string.app_not_found))
                 finish()
                 return@launch
             }
@@ -108,6 +117,7 @@ class AppDetailActivity : AppCompatActivity() {
             binding.root,
             com.google.android.material.R.attr.colorOnSurfaceVariant
         )
+        var icon: StatusIcon? = null
         when (state) {
             is BackupState.Idle -> {
                 binding.progressBackup.isVisible = false
@@ -117,23 +127,27 @@ class AppDetailActivity : AppCompatActivity() {
             }
             is BackupState.Running -> {
                 binding.progressBackup.isVisible = true
-                binding.textBackupStatus.text = state.step
+                binding.progressBackup.setProgressCompat(state.percent, true)
+                binding.textBackupStatus.text = exportStatusText(state)
                 binding.btnBackup.isEnabled = false
             }
             is BackupState.Done -> {
                 binding.progressBackup.isVisible = false
                 binding.textBackupStatus.text = getString(R.string.backup_success, state.path)
                 binding.btnBackup.isEnabled = true
-                color = ContextCompat.getColor(this, R.color.status_ok)
+                color = statusOk(this)
+                icon = StatusIcon.SUCCESS
             }
             is BackupState.Error -> {
                 binding.progressBackup.isVisible = false
                 binding.textBackupStatus.text = getString(R.string.backup_failed, state.message)
                 binding.btnBackup.isEnabled = true
                 color = MaterialColors.getColor(binding.root, androidx.appcompat.R.attr.colorError)
+                icon = StatusIcon.ERROR
             }
         }
         binding.textBackupStatus.setTextColor(color)
+        binding.textBackupStatus.showStatusIcon(icon, color)
         binding.textBackupStatus.isVisible = true
     }
 
@@ -166,7 +180,7 @@ class AppDetailActivity : AppCompatActivity() {
         binding.btnOpenApp.isEnabled = launchable
         binding.btnOpenApp.setOnClickListener {
             packageManager.getLaunchIntentForPackage(app.packageName)?.let { startActivity(it) }
-                ?: Toast.makeText(this, getString(R.string.cannot_launch), Toast.LENGTH_SHORT).show()
+                ?: showToast(this, getString(R.string.cannot_launch))
         }
 
         binding.btnAppInfo.setOnClickListener {
@@ -179,7 +193,7 @@ class AppDetailActivity : AppCompatActivity() {
 
         binding.btnBackup.setOnClickListener {
             if (backupViewModel.isRunning()) {
-                Toast.makeText(this, R.string.export_in_progress, Toast.LENGTH_SHORT).show()
+                showToast(this, R.string.export_in_progress)
                 return@setOnClickListener
             }
             ExportDialog.show(this, app) { password ->
@@ -199,11 +213,19 @@ class AppDetailActivity : AppCompatActivity() {
 
         binding.btnHash.setOnClickListener { computeAndShowHash(app) }
 
+        binding.btnTimeline.setOnClickListener {
+            startActivity(
+                Intent(this, AppTimelineActivity::class.java)
+                    .putExtra(AppTimelineActivity.EXTRA_PACKAGE_NAME, app.packageName)
+            )
+        }
+
         listOf(
             binding.btnOpenApp,
             binding.btnAppInfo,
             binding.btnBackup,
             binding.btnHash,
+            binding.btnTimeline,
             binding.btnUninstall
         ).forEach { it.applyPressAnimation() }
 
@@ -238,6 +260,32 @@ class AppDetailActivity : AppCompatActivity() {
         )
     }
 
+    private fun recordNormalUninstall(app: AppInfo) {
+        val context = applicationContext
+        val before = InstalledState(
+            packageName = app.packageName,
+            label = app.label,
+            versionName = app.versionName,
+            versionCode = app.versionCode,
+            firstInstall = app.installTimeMs,
+            lastUpdate = app.updateTimeMs,
+            signers = emptySet(),
+            permissions = app.requestedPermissions,
+            minSdk = app.minSdk,
+            targetSdk = app.targetSdk,
+            installer = null
+        )
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                AppTimelineManager.recordUninstall(
+                    context, app.packageName, InstallMode.NORMAL.name, before, false
+                )
+            } catch (e: Exception) {
+                DebugLog.e("AppDetail", "Timeline record failed: ${e.message}")
+            }
+        }
+    }
+
     private fun performUninstall(app: AppInfo, mode: InstallMode) {
         if (mode == InstallMode.NORMAL) {
             DebugLog.d("AppDetail", "Uninstall normal mode: ${app.packageName}")
@@ -259,7 +307,7 @@ class AppDetailActivity : AppCompatActivity() {
             result.fold(
                 onSuccess = {
                     DebugLog.i("AppDetail", "Uninstall successful: ${app.packageName}")
-                    Toast.makeText(this@AppDetailActivity, getString(R.string.uninstall_success), Toast.LENGTH_SHORT).show()
+                    showToast(this@AppDetailActivity, getString(R.string.uninstall_success))
                     finish()
                 },
                 onFailure = { e ->
@@ -295,7 +343,7 @@ class AppDetailActivity : AppCompatActivity() {
                     val sha256 = hashes["SHA-256"] ?: return@showInfo
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText("SHA-256", sha256))
-                    Toast.makeText(this@AppDetailActivity, getString(R.string.hash_copied), Toast.LENGTH_SHORT).show()
+                    showToast(this@AppDetailActivity, getString(R.string.hash_copied))
                 }
             )
         }

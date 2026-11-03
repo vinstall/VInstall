@@ -1,5 +1,13 @@
 package com.vinstall.alwiz
 
+import com.vinstall.alwiz.ui.showToast
+import com.vinstall.alwiz.ui.bindExportBanner
+import com.vinstall.alwiz.ui.StatusIcon
+import com.vinstall.alwiz.ui.showStatusIcon
+import com.vinstall.alwiz.ui.statusOk
+import com.vinstall.alwiz.ui.statusWarn
+import com.vinstall.alwiz.util.Haptics
+import com.vinstall.alwiz.util.VersionLabel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -8,12 +16,11 @@ import android.os.Bundle
 import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import com.vinstall.alwiz.ui.ScaledActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -49,7 +56,7 @@ import com.vinstall.alwiz.util.PackageVersions
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ScaledActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
@@ -59,6 +66,8 @@ class MainActivity : AppCompatActivity() {
     private var isActivityResumed = false
     private var lastBatchTotal = 0
     private var lastHandledSuccess: InstallState.Success? = null
+    private var lastHandledError: InstallState.Error? = null
+    private var batchHadFailure = false
     private var boundFile: InstallState.FileSelected? = null
     private var passwordDialog: AlertDialog? = null
 
@@ -70,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         val granted = result == PackageManager.PERMISSION_GRANTED
         AppSettings.setShizukuPermissionGranted(this, granted)
         val msg = if (granted) getString(R.string.shizuku_granted) else getString(R.string.shizuku_denied)
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        showToast(this, msg)
         updateInstallModeStatus()
     }
 
@@ -98,6 +107,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        bindExportBanner(binding.root.findViewById(R.id.export_banner))
         binding.root.applySystemBarInsets()
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
@@ -188,7 +198,19 @@ class MainActivity : AppCompatActivity() {
                 return
             }
             lastBatchTotal = ordered.size
-            viewModel.enqueueFiles(ordered)
+            if (!AppSettings.isConfirmInstallEffective(this)) {
+                viewModel.enqueueFiles(ordered)
+                return
+            }
+            DialogHelper.showConfirmation(
+                activity = this,
+                title = getString(R.string.confirm_install_title),
+                message = getString(R.string.confirm_install_batch_message, ordered.size),
+                positiveLabel = getString(R.string.install),
+                negativeLabel = getString(R.string.cancel),
+                appInstallInfo = null,
+                onConfirm = { viewModel.enqueueFiles(ordered) }
+            )
             return
         }
         handleSingleInstallClick()
@@ -200,7 +222,7 @@ class MainActivity : AppCompatActivity() {
             storageAccess.promptAllFilesAccess(R.string.storage_permission_rationale)
             return
         }
-        if (!AppSettings.isConfirmInstall(this)) {
+        if (!AppSettings.isConfirmInstallEffective(this)) {
             viewModel.install()
             return
         }
@@ -278,18 +300,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestShizukuPermissionManually() {
         if (!ShizukuHelper.isAvailable()) {
-            Toast.makeText(this, getString(R.string.shizuku_not_available_toast), Toast.LENGTH_SHORT).show()
+            showToast(this, getString(R.string.shizuku_not_available_toast))
             return
         }
         if (ShizukuHelper.isGranted()) {
-            Toast.makeText(this, getString(R.string.shizuku_already_granted_toast), Toast.LENGTH_SHORT).show()
+            showToast(this, getString(R.string.shizuku_already_granted_toast))
             updateInstallModeStatus()
             return
         }
         shizukuPermissionPending = true
         if (!ShizukuHelper.requestPermission(shizukuPermissionListener)) {
             shizukuPermissionPending = false
-            Toast.makeText(this, getString(R.string.shizuku_not_available_toast), Toast.LENGTH_SHORT).show()
+            showToast(this, getString(R.string.shizuku_not_available_toast))
         }
     }
 
@@ -362,6 +384,7 @@ class MainActivity : AppCompatActivity() {
         var statusText: String? = null
         var statusColor = colorOnSurfaceVariant()
         var showProgress = false
+        var statusIcon: StatusIcon? = null
 
         when (state) {
             is InstallState.Analyzing -> {
@@ -383,18 +406,28 @@ class MainActivity : AppCompatActivity() {
             }
             is InstallState.Success -> {
                 statusText = getString(R.string.install_success)
-                statusColor = ContextCompat.getColor(this, R.color.status_ok)
+                statusColor = statusOk(this)
+                statusIcon = StatusIcon.SUCCESS
                 if (!batchRunning && lastHandledSuccess !== state) {
                     lastHandledSuccess = state
+                    Haptics.success(this)
                     showInstallSuccessSnackbar(state.packageName)
                 }
             }
             is InstallState.Error -> {
                 statusText = getString(R.string.install_failed, state.message)
                 statusColor = colorError()
+                statusIcon = StatusIcon.ERROR
+                if (batchRunning) batchHadFailure = true
+                if (!batchRunning && lastHandledError !== state) {
+                    lastHandledError = state
+                    Haptics.failure(this)
+                }
             }
             is InstallState.Cancelled -> {
                 statusText = state.reason
+                statusColor = statusWarn(this)
+                statusIcon = StatusIcon.CANCELLED
                 lastBatchTotal = 0
             }
             is InstallState.PasswordRequired -> showPasswordDialog(state)
@@ -402,6 +435,8 @@ class MainActivity : AppCompatActivity() {
                 if (lastBatchTotal > 0 && !batchRunning && !queueMode) {
                     val total = lastBatchTotal
                     lastBatchTotal = 0
+                    if (batchHadFailure) Haptics.failure(this) else Haptics.success(this)
+                    batchHadFailure = false
                     showBatchFinishedSnackbar(total)
                 }
             }
@@ -417,6 +452,7 @@ class MainActivity : AppCompatActivity() {
         binding.textStatus.isVisible = statusText != null
         binding.textStatus.text = statusText.orEmpty()
         binding.textStatus.setTextColor(statusColor)
+        binding.textStatus.showStatusIcon(statusIcon, statusColor)
         binding.textBatchProgress.isVisible = batch != null
         if (batch != null) {
             val label = if (batch.label.isNotEmpty()) " · ${batch.label}" else ""
@@ -501,7 +537,7 @@ class MainActivity : AppCompatActivity() {
 
         val title = state.label.ifEmpty { state.fileName }
         val subtitle = if (state.packageName.isNotEmpty() && state.versionName.isNotEmpty()) {
-            "${state.packageName} · v${state.versionName}"
+            "${state.packageName} · ${VersionLabel.format(state.versionName)}"
         } else {
             state.packageName
         }
@@ -539,7 +575,7 @@ class MainActivity : AppCompatActivity() {
         val editPassword = dialogView.findViewById<TextInputEditText>(R.id.edit_password)
         val title = item.appLabel.ifEmpty { item.displayName }
         val subtitle = if (item.packageName.isNotEmpty() && item.versionName.isNotEmpty()) {
-            "${item.packageName} · v${item.versionName}"
+            "${item.packageName} · ${VersionLabel.format(item.versionName)}"
         } else {
             item.packageName
         }
@@ -679,7 +715,7 @@ class MainActivity : AppCompatActivity() {
         updateInstallModeStatus()
         checkAndRequestShizukuPermission()
         invalidateOptionsMenu()
-        binding.floatingNav.setDebugVisible(AppSettings.isDebugWindowEnabled(this))
+        binding.floatingNav.setDebugVisible(AppSettings.isDebugTabEnabled(this))
     }
 
     override fun onPause() {

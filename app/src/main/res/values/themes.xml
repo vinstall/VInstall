@@ -32,6 +32,21 @@
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.VInstall.MaterialAlertDialog</item>
 
         <item name="toolbarStyle">@style/Widget.VInstall.Toolbar</item>
+        <item name="vFontRegular">@font/poppins_regular</item>
+        <item name="vFontMedium">@font/poppins_medium</item>
+        <item name="vFontSemibold">@font/poppins_semibold</item>
+        <item name="vFontBold">@font/poppins_bold</item>
+        <item name="vTextStyle">0</item>
+        <item name="vTouch48">48dp</item>
+        <item name="vSwitchPadTop">16dp</item>
+        <item name="vSwitchPadBottom">6dp</item>
+        <item name="vTouch52">52dp</item>
+        <item name="vTouch56">56dp</item>
+        <item name="vTouch64">64dp</item>
+        <item name="vTouch72">72dp</item>
+        <item name="vStatusOk">@color/status_ok</item>
+        <item name="vStatusWarn">@color/status_warn</item>
+        <item name="vStatusBlocked">@color/status_blocked</item>
         <item name="android:fontFamily">@font/poppins</item>
         <item name="fontFamily">@font/poppins</item>
         <item name="textAppearanceDisplayLarge">@style/TextAppearance.VInstall.DisplayLarge</item>
@@ -49,15 +64,141 @@
         <item name="textAppearanceLabelLarge">@style/TextAppearance.VInstall.LabelLarge</item>
         <item name="textAppearanceLabelMedium">@style/TextAppearance.VInstall.LabelMedium</item>
         <item name="textAppearanceLabelSmall">@style/TextAppearance.VInstall.LabelSmall</item>
+        <item name="viewInflaterClass">com.vinstall.alwiz.ui.MarqueeViewInflater</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.VInstall.BottomSheetDialog</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="viewInflaterClass">com.vinstall.alwiz.ui.MarqueeViewInflater</item>
     </style>
 
     <style name="ThemeOverlay.VInstall.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="android:windowAnimationStyle">@style/Animation.VInstall.Dialog</item>
     </style>
 
+    <style name="ThemeOverlay.VInstall.SystemFont" parent="">
+        <item name="vFontRegular">@string/font_family_regular</item>
+        <item name="vFontMedium">@string/font_family_medium</item>
+        <item name="vFontSemibold">@string/font_family_medium</item>
+        <item name="vFontBold">@string/font_family_medium</item>
+        <item name="android:fontFamily">@string/font_family_regular</item>
+        <item name="fontFamily">@string/font_family_regular</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.HighContrast" parent="">
+        <item name="colorPrimary">@color/hc_primary</item>
+        <item name="colorOnPrimary">@color/hc_on_primary</item>
+        <item name="colorPrimaryContainer">@color/hc_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/hc_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/hc_primary_inverse</item>
+        <item name="colorSecondary">@color/hc_secondary</item>
+        <item name="colorOnSecondary">@color/hc_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/hc_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/hc_on_secondary_container</item>
+        <item name="colorError">@color/hc_error_role</item>
+        <item name="colorOnError">@color/hc_on_error_role</item>
+        <item name="colorErrorContainer">@color/hc_error_container_role</item>
+        <item name="colorOnErrorContainer">@color/hc_on_error_container_role</item>
+        <item name="android:colorBackground">@color/hc_surface</item>
+        <item name="colorOnBackground">@color/hc_on_surface</item>
+        <item name="colorSurface">@color/hc_surface</item>
+        <item name="colorOnSurface">@color/hc_on_surface</item>
+        <item name="colorSurfaceVariant">@color/hc_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/hc_on_surface_variant</item>
+        <item name="colorSurfaceInverse">@color/hc_surface_inverse</item>
+        <item name="colorOnSurfaceInverse">@color/hc_on_surface_inverse</item>
+        <item name="colorOutline">@color/hc_outline_role</item>
+        <item name="colorOutlineVariant">@color/hc_outline_variant_role</item>
+        <item name="colorSurfaceContainerLowest">@color/hc_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/hc_container_low</item>
+        <item name="colorSurfaceContainer">@color/hc_container</item>
+        <item name="colorSurfaceContainerHigh">@color/hc_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/hc_container_highest</item>
+        <item name="vStatusOk">@color/hc_status_ok</item>
+        <item name="vStatusWarn">@color/hc_status_warn</item>
+        <item name="vStatusBlocked">@color/hc_status_blocked</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.BoldText" parent="">
+        <item name="vFontRegular">@font/poppins_bold</item>
+        <item name="vFontMedium">@font/poppins_bold</item>
+        <item name="vFontSemibold">@font/poppins_bold</item>
+        <item name="vFontBold">@font/poppins_bold</item>
+        <item name="android:fontFamily">@font/poppins_bold</item>
+        <item name="fontFamily">@font/poppins_bold</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.BoldTextSystem" parent="">
+        <item name="vFontRegular">@string/font_family_regular</item>
+        <item name="vFontMedium">@string/font_family_regular</item>
+        <item name="vFontSemibold">@string/font_family_regular</item>
+        <item name="vFontBold">@string/font_family_regular</item>
+        <item name="vTextStyle">1</item>
+        <item name="android:fontFamily">@string/font_family_regular</item>
+        <item name="fontFamily">@string/font_family_regular</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.LargeTouch" parent="">
+        <item name="vTouch48">64dp</item>
+        <item name="vSwitchPadTop">24dp</item>
+        <item name="vSwitchPadBottom">14dp</item>
+        <item name="vTouch52">68dp</item>
+        <item name="vTouch56">72dp</item>
+        <item name="vTouch64">80dp</item>
+        <item name="vTouch72">80dp</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.NoMotion" parent="">
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.VInstall.MaterialAlertDialog.NoMotion</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.MaterialAlertDialog.NoMotion" parent="ThemeOverlay.VInstall.MaterialAlertDialog">
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
     <style name="Animation.VInstall.Dialog" parent="">
         <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
         <item name="android:windowExitAnimation">@anim/dialog_exit</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.Motion050" parent="">
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.VInstall.MaterialAlertDialog.Motion050</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.MaterialAlertDialog.Motion050" parent="ThemeOverlay.VInstall.MaterialAlertDialog">
+        <item name="android:windowAnimationStyle">@style/Animation.VInstall.Dialog.Motion050</item>
+    </style>
+
+    <style name="Animation.VInstall.Dialog.Motion050" parent="">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter_050</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit_050</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.Motion200" parent="">
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.VInstall.MaterialAlertDialog.Motion200</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.MaterialAlertDialog.Motion200" parent="ThemeOverlay.VInstall.MaterialAlertDialog">
+        <item name="android:windowAnimationStyle">@style/Animation.VInstall.Dialog.Motion200</item>
+    </style>
+
+    <style name="Animation.VInstall.Dialog.Motion200" parent="">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter_200</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit_200</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.Motion300" parent="">
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.VInstall.MaterialAlertDialog.Motion300</item>
+    </style>
+
+    <style name="ThemeOverlay.VInstall.MaterialAlertDialog.Motion300" parent="ThemeOverlay.VInstall.MaterialAlertDialog">
+        <item name="android:windowAnimationStyle">@style/Animation.VInstall.Dialog.Motion300</item>
+    </style>
+
+    <style name="Animation.VInstall.Dialog.Motion300" parent="">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter_300</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit_300</item>
     </style>
 
     <style name="ShapeAppearance.VInstall.Medium" parent="">
@@ -69,17 +210,23 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowDisablePreview">true</item>
     </style>
 
     <style name="Widget.VInstall.Row" parent="">
         <item name="android:background">?attr/selectableItemBackground</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
-        <item name="android:minHeight">64dp</item>
+        <item name="android:minHeight">?attr/vTouch64</item>
         <item name="android:gravity">center_vertical</item>
         <item name="android:orientation">horizontal</item>
         <item name="android:paddingStart">4dp</item>
         <item name="android:paddingEnd">4dp</item>
+    </style>
+
+    <style name="Widget.VInstall.Divider" parent="">
+        <item name="android:background">?attr/colorOutlineVariant</item>
     </style>
 
 </resources>

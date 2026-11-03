@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
 import java.io.OutputStream
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -49,13 +50,16 @@ object ApkvExporter {
         appInfo: AppInfo,
         outputDir: File,
         password: String? = null,
+        onProgress: (Float) -> Unit = {},
         onStep: (String) -> Unit
     ): Result<File> = withContext(Dispatchers.IO) {
+        var partial: File? = null
         try {
             outputDir.mkdirs()
             val safeName = appInfo.packageName.replace(Regex("[^a-zA-Z0-9._]"), "_")
             val safeVersion = appInfo.versionName.replace(Regex("[^a-zA-Z0-9._]"), "_").take(32)
             val outFile = File(outputDir, "${safeName}_${safeVersion}.apkv")
+            partial = outFile
 
             onStep("Collecting APK files...")
             DebugLog.d(TAG, "Export start: ${appInfo.packageName} encrypted=${password != null}")
@@ -65,6 +69,11 @@ object ApkvExporter {
                 return@withContext Result.failure(Exception("No APK files found for ${appInfo.packageName}"))
             }
 
+            val meter = ProgressMeter(
+                apkFiles.sumOf { it.length() } * (if (password != null) 3L else 2L),
+                onProgress
+            )
+
             onStep("Exporting icon...")
             val iconBytes = appInfo.icon?.let { drawableToWebP(it) }
             val hasIcon = iconBytes != null
@@ -73,7 +82,7 @@ object ApkvExporter {
             val encrypted = password != null
 
             onStep("Computing checksums...")
-            val checksums = computeChecksums(apkFiles)
+            val checksums = computeChecksums(apkFiles, meter)
             val totalSize = apkFiles.sumOf { it.length() }
 
             val exportedAt = System.currentTimeMillis()
@@ -97,16 +106,18 @@ object ApkvExporter {
 
             if (encrypted) {
                 onStep("Encrypting package...")
-                writeEncrypted(apkFiles, manifest, appInfo, outFile, password!!, iconBytes, exportedAt, onStep)
+                writeEncrypted(apkFiles, manifest, appInfo, outFile, password!!, iconBytes, exportedAt, meter, onStep)
             } else {
                 onStep("Archiving package...")
-                writePlain(apkFiles, manifest, outFile, iconBytes, onStep)
+                writePlain(apkFiles, manifest, outFile, iconBytes, meter, onStep)
             }
 
+            onProgress(1f)
             DebugLog.i(TAG, "Export complete: ${outFile.absolutePath}")
             Result.success(outFile)
         } catch (e: Exception) {
             DebugLog.e(TAG, "Export failed: ${e.message}")
+            partial?.delete()
             Result.failure(e)
         }
     }
@@ -120,7 +131,7 @@ object ApkvExporter {
         return files
     }
 
-    private fun computeChecksums(apkFiles: List<File>): Map<String, String> {
+    private fun computeChecksums(apkFiles: List<File>, meter: ProgressMeter): Map<String, String> {
         return apkFiles.associate { file ->
             val digest = MessageDigest.getInstance("SHA-256")
             val buffer = ByteArray(STREAM_BUFFER_SIZE)
@@ -128,6 +139,7 @@ object ApkvExporter {
                 var read: Int
                 while (fis.read(buffer).also { read = it } != -1) {
                     digest.update(buffer, 0, read)
+                    meter.add(read)
                 }
             }
             val hex = digest.digest().joinToString("") { "%02x".format(it) }
@@ -176,6 +188,7 @@ object ApkvExporter {
         manifest: ApkvManifest,
         outFile: File,
         iconBytes: ByteArray?,
+        meter: ProgressMeter,
         onStep: (String) -> Unit
     ) {
         ZipOutputStream(outFile.outputStream().buffered()).use { zos ->
@@ -192,7 +205,7 @@ object ApkvExporter {
             for (apk in apkFiles) {
                 onStep("Archiving ${apk.name}...")
                 zos.putNextEntry(ZipEntry(apk.name))
-                FileInputStream(apk).use { it.copyTo(zos) }
+                FileInputStream(apk).use { copyCounting(it, zos, meter) }
                 zos.closeEntry()
             }
         }
@@ -206,6 +219,7 @@ object ApkvExporter {
         password: String,
         iconBytes: ByteArray?,
         exportedAt: Long,
+        meter: ProgressMeter,
         onStep: (String) -> Unit
     ) {
         val header = ApkvHeader(
@@ -232,7 +246,7 @@ object ApkvExporter {
         val tempPayload = File(outFile.parent, "${outFile.name}.tmp")
         try {
             onStep("Building payload archive...")
-            buildPayloadZipToFile(apkFiles, tempPayload, onStep)
+            buildPayloadZipToFile(apkFiles, tempPayload, meter, onStep)
 
             ZipOutputStream(outFile.outputStream().buffered()).use { zos ->
                 zos.putNextEntry(ZipEntry(ENTRY_ENCRYPTED_MARKER))
@@ -255,7 +269,7 @@ object ApkvExporter {
 
                 onStep("Encrypting payload...")
                 zos.putNextEntry(ZipEntry(ENTRY_PAYLOAD_ENC))
-                streamEncryptFileTo(tempPayload, zos, password)
+                streamEncryptFileTo(tempPayload, zos, password, meter)
                 zos.closeEntry()
             }
         } finally {
@@ -266,19 +280,20 @@ object ApkvExporter {
     private fun buildPayloadZipToFile(
         apkFiles: List<File>,
         destFile: File,
+        meter: ProgressMeter,
         onStep: (String) -> Unit
     ) {
         ZipOutputStream(destFile.outputStream().buffered(STREAM_BUFFER_SIZE)).use { zos ->
             for (apk in apkFiles) {
                 onStep("Packing ${apk.name}...")
                 zos.putNextEntry(ZipEntry(apk.name))
-                FileInputStream(apk).use { it.copyTo(zos, STREAM_BUFFER_SIZE) }
+                FileInputStream(apk).use { copyCounting(it, zos, meter) }
                 zos.closeEntry()
             }
         }
     }
 
-    private fun streamEncryptFileTo(inputFile: File, out: OutputStream, password: String) {
+    private fun streamEncryptFileTo(inputFile: File, out: OutputStream, password: String, meter: ProgressMeter) {
         val salt = ByteArray(ApkvCrypto.SALT_BYTE_LENGTH).also { SecureRandom().nextBytes(it) }
         val iv   = ByteArray(ApkvCrypto.IV_BYTE_LENGTH).also   { SecureRandom().nextBytes(it) }
 
@@ -297,8 +312,32 @@ object ApkvExporter {
             while (fis.read(buffer).also { read = it } != -1) {
                 val chunk = cipher.update(buffer, 0, read)
                 if (chunk != null) out.write(chunk)
+                meter.add(read)
             }
             out.write(cipher.doFinal())
+        }
+    }
+
+    private fun copyCounting(input: InputStream, out: OutputStream, meter: ProgressMeter) {
+        val buffer = ByteArray(STREAM_BUFFER_SIZE)
+        var read: Int
+        while (input.read(buffer).also { read = it } != -1) {
+            out.write(buffer, 0, read)
+            meter.add(read)
+        }
+    }
+
+    private class ProgressMeter(private val total: Long, private val sink: (Float) -> Unit) {
+        private var done = 0L
+        private var lastPercent = -1
+
+        fun add(bytes: Int) {
+            done += bytes
+            val percent = (done * 100 / total.coerceAtLeast(1L)).toInt().coerceIn(0, 99)
+            if (percent != lastPercent) {
+                lastPercent = percent
+                sink(percent / 100f)
+            }
         }
     }
 }

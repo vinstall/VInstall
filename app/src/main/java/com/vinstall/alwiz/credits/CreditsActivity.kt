@@ -1,5 +1,6 @@
 package com.vinstall.alwiz.credits
 
+import com.vinstall.alwiz.ui.showToast
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
@@ -7,9 +8,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
+import com.vinstall.alwiz.ui.ScaledActivity
 import com.google.android.material.button.MaterialButton
 import com.vinstall.alwiz.R
 import com.vinstall.alwiz.databinding.ActivityCreditsBinding
@@ -17,7 +17,7 @@ import com.vinstall.alwiz.ui.applyPressAnimation
 import com.vinstall.alwiz.ui.applySystemBarInsets
 import com.vinstall.alwiz.ui.staggerChildren
 
-class CreditsActivity : AppCompatActivity() {
+class CreditsActivity : ScaledActivity() {
 
     private data class Library(
         val name: String,
@@ -82,7 +82,7 @@ class CreditsActivity : AppCompatActivity() {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         } catch (_: ActivityNotFoundException) {
-            Toast.makeText(this, getString(R.string.credits_open_failed), Toast.LENGTH_SHORT).show()
+            showToast(this, getString(R.string.credits_open_failed))
         }
     }
 

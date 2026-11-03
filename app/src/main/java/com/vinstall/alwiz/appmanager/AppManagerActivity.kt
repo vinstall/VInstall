@@ -2,10 +2,11 @@ package com.vinstall.alwiz.appmanager
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
 import android.view.MenuItem
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import com.vinstall.alwiz.ui.ScaledActivity
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
@@ -14,12 +15,15 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.color.MaterialColors
 import com.vinstall.alwiz.R
+import com.vinstall.alwiz.ui.bindExportBanner
 import com.vinstall.alwiz.databinding.ActivityAppManagerBinding
 import com.vinstall.alwiz.model.AppInfo
+import com.vinstall.alwiz.timeline.AppTimelineActivity
+import com.vinstall.alwiz.timeline.AppTimelineManager
 import com.vinstall.alwiz.ui.applySystemBarInsets
 import kotlinx.coroutines.launch
 
-class AppManagerActivity : AppCompatActivity() {
+class AppManagerActivity : ScaledActivity() {
 
     private lateinit var binding: ActivityAppManagerBinding
     private val viewModel: AppManagerViewModel by viewModels()
@@ -32,6 +36,7 @@ class AppManagerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAppManagerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        bindExportBanner(binding.root.findViewById(R.id.export_banner))
         binding.root.applySystemBarInsets()
 
         setSupportActionBar(binding.toolbar)
@@ -111,6 +116,16 @@ class AppManagerActivity : AppCompatActivity() {
         if (savedInstanceState == null) viewModel.loadApps()
     }
 
+    override fun onStart() {
+        super.onStart()
+        AppTimelineManager.syncAsync(this)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.app_manager_menu, menu)
+        return true
+    }
+
     private fun updateEmptyState() {
         val loading = viewModel.isLoading.value
         binding.textEmpty.isVisible = !loading && viewModel.displayedApps.value.isEmpty()
@@ -120,6 +135,10 @@ class AppManagerActivity : AppCompatActivity() {
         return when (item.itemId) {
             android.R.id.home -> {
                 finish()
+                true
+            }
+            R.id.action_timeline -> {
+                startActivity(Intent(this, AppTimelineActivity::class.java))
                 true
             }
             else -> super.onOptionsItemSelected(item)

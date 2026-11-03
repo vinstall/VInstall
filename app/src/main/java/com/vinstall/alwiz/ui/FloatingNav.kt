@@ -3,11 +3,13 @@ package com.vinstall.alwiz.ui
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Outline
 import android.os.Build
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.view.ViewOutlineProvider
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -17,6 +19,7 @@ import android.content.res.ColorStateList
 import com.google.android.material.color.MaterialColors
 import com.vinstall.alwiz.DebugWindowActivity
 import com.vinstall.alwiz.R
+import com.vinstall.alwiz.blocked.BlockedAppsActivity
 import com.vinstall.alwiz.history.InstallHistoryActivity
 import com.vinstall.alwiz.settings.AppSettings
 import com.vinstall.alwiz.settings.SettingsActivity
@@ -29,6 +32,7 @@ class FloatingNav @JvmOverloads constructor(
     enum class Tab(val iconRes: Int, val labelRes: Int) {
         INSTALL(R.drawable.ic_nav_install, R.string.nav_install),
         DEBUG(R.drawable.ic_nav_debug, R.string.nav_debug),
+        BLOCKED(R.drawable.ic_nav_blocked, R.string.nav_blocked),
         SETTINGS(R.drawable.ic_nav_settings, R.string.nav_settings),
         LOG(R.drawable.ic_nav_log, R.string.nav_log)
     }
@@ -59,6 +63,12 @@ class FloatingNav @JvmOverloads constructor(
             isClickable = true
             isFocusable = true
             setBackgroundResource(R.drawable.nav_item_bg)
+            outlineProvider = object : ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: Outline) {
+                    outline.setRoundRect(0, 0, view.width, view.height, dp(24).toFloat())
+                }
+            }
+            clipToOutline = true
             contentDescription = context.getString(tab.labelRes)
             layoutParams = LayoutParams(0, dp(56), 1f).apply {
                 marginStart = dp(2)
@@ -75,8 +85,6 @@ class FloatingNav @JvmOverloads constructor(
         val label = TextView(context).apply {
             setText(tab.labelRes)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = dp(2)
@@ -84,6 +92,7 @@ class FloatingNav @JvmOverloads constructor(
         }
         item.addView(icon)
         item.addView(label)
+        label.enableMarquee()
         addView(item)
         items[tab] = item
         icons[tab] = icon
@@ -112,7 +121,7 @@ class FloatingNav @JvmOverloads constructor(
 
 fun AppCompatActivity.bindFloatingNav(nav: FloatingNav, current: FloatingNav.Tab) {
     if (current != FloatingNav.Tab.INSTALL) fadeTransition()
-    nav.setDebugVisible(AppSettings.isDebugWindowEnabled(this))
+    nav.setDebugVisible(AppSettings.isDebugTabEnabled(this))
     nav.setSelectedTab(current)
     nav.onSelect = { target ->
         if (target != current) {
@@ -122,6 +131,7 @@ fun AppCompatActivity.bindFloatingNav(nav: FloatingNav, current: FloatingNav.Tab
             } else {
                 val destination = when (target) {
                     FloatingNav.Tab.DEBUG -> DebugWindowActivity::class.java
+                    FloatingNav.Tab.BLOCKED -> BlockedAppsActivity::class.java
                     FloatingNav.Tab.SETTINGS -> SettingsActivity::class.java
                     else -> InstallHistoryActivity::class.java
                 }
@@ -141,11 +151,27 @@ fun AppCompatActivity.bindFloatingNav(nav: FloatingNav, current: FloatingNav.Tab
 }
 
 private fun Activity.fadeTransition() {
+    val off = ReduceMotion.isEnabled(this)
+    val tier = ReduceMotion.tier(this)
+    val enter = when {
+        off -> 0
+        tier == 0.5f -> R.anim.nav_fade_in_050
+        tier == 2f -> R.anim.nav_fade_in_200
+        tier == 3f -> R.anim.nav_fade_in_300
+        else -> R.anim.nav_fade_in
+    }
+    val exit = when {
+        off -> 0
+        tier == 0.5f -> R.anim.nav_fade_out_050
+        tier == 2f -> R.anim.nav_fade_out_200
+        tier == 3f -> R.anim.nav_fade_out_300
+        else -> R.anim.nav_fade_out
+    }
     if (Build.VERSION.SDK_INT >= 34) {
-        overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, R.anim.nav_fade_in, R.anim.nav_fade_out)
-        overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, R.anim.nav_fade_in, R.anim.nav_fade_out)
+        overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, enter, exit)
+        overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, enter, exit)
     } else {
         @Suppress("DEPRECATION")
-        overridePendingTransition(R.anim.nav_fade_in, R.anim.nav_fade_out)
+        overridePendingTransition(enter, exit)
     }
 }

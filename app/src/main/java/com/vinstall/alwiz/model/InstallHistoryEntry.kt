@@ -11,7 +11,8 @@ data class InstallHistoryEntry(
     val status: HistoryStatus,
     val detail: String,
     val installMode: String,
-    val durationMs: Long
+    val durationMs: Long,
+    val sourcePackage: String? = null
 )
 
-enum class HistoryStatus { SUCCESS, FAILED, CANCELLED }
+enum class HistoryStatus { SUCCESS, FAILED, CANCELLED, BLOCKED }

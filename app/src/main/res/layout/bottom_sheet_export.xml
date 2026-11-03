@@ -93,7 +93,7 @@
                         android:id="@+id/checkbox_encrypt"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="48dp"
+                        android:minHeight="?attr/vTouch48"
                         android:text="@string/export_encrypt"
                         android:textAppearance="@style/TextAppearance.VInstall.BodyLarge" />
 
@@ -123,7 +123,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:minHeight="48dp"
+                android:minHeight="?attr/vTouch48"
                 android:text="@string/export_button" />
 
             <com.google.android.material.button.MaterialButton
@@ -132,7 +132,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:minHeight="48dp"
+                android:minHeight="?attr/vTouch48"
                 android:text="@string/cancel" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

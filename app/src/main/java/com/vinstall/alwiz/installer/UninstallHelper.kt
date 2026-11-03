@@ -4,21 +4,32 @@ import android.content.Context
 import com.vinstall.alwiz.settings.AppSettings
 import com.vinstall.alwiz.settings.InstallMode
 import com.vinstall.alwiz.shizuku.ShizukuHelper
+import com.vinstall.alwiz.timeline.AppTimelineManager
 import com.vinstall.alwiz.util.DebugLog
+import com.vinstall.alwiz.util.ShellSafe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object UninstallHelper {
 
+    fun uninstallWith(mode: InstallMode, packageName: String, keepData: Boolean): Result<Unit> =
+        when (mode) {
+            InstallMode.ROOT -> uninstallViaRoot(packageName, keepData)
+            InstallMode.SHIZUKU -> uninstallViaShizuku(packageName, keepData)
+            InstallMode.NORMAL -> Result.failure(Exception("NORMAL_MODE"))
+        }
+
     suspend fun uninstall(context: Context, packageName: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             DebugLog.i("Uninstall", "Starting uninstall for $packageName")
-            when (AppSettings.getInstallMode(context)) {
-                InstallMode.ROOT -> uninstallViaRoot(packageName)
+            val mode = AppSettings.getInstallMode(context)
+            val before = AppTimelineManager.readInstalled(context, packageName)
+            val result = when (mode) {
+                InstallMode.ROOT -> uninstallViaRoot(packageName, false)
                 InstallMode.SHIZUKU -> {
                     if (ShizukuHelper.isAvailable() && ShizukuHelper.isGranted()) {
                         if (ShizukuHelper.isNewProcessAvailable()) {
-                            uninstallViaShizuku(packageName)
+                            uninstallViaShizuku(packageName, false)
                         } else {
                             Result.failure(Exception("Shizuku version on this device does not support shell execution"))
                         }
@@ -28,11 +39,20 @@ object UninstallHelper {
                 }
                 InstallMode.NORMAL -> Result.failure(Exception("NORMAL_MODE"))
             }
+            if (result.isSuccess) {
+                try {
+                    AppTimelineManager.recordUninstall(context, packageName, mode.name, before, false)
+                } catch (e: Exception) {
+                    DebugLog.e("Uninstall", "Timeline record failed: ${e.message}")
+                }
+            }
+            result
         }
 
-    private fun uninstallViaRoot(packageName: String): Result<Unit> = try {
-        DebugLog.d("Uninstall", "Via root: pm uninstall $packageName")
-        val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "pm uninstall $packageName"))
+    private fun uninstallViaRoot(packageName: String, keepData: Boolean): Result<Unit> = try {
+        val flag = if (keepData) "-k " else ""
+        DebugLog.d("Uninstall", "Via root: pm uninstall $flag$packageName")
+        val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "pm uninstall $flag${ShellSafe.quote(packageName)}"))
         val output = process.inputStream.bufferedReader().readText().trim()
         val err = process.errorStream.bufferedReader().readText().trim()
         process.waitFor()
@@ -46,8 +66,8 @@ object UninstallHelper {
         Result.failure(e)
     }
 
-    private fun uninstallViaShizuku(packageName: String): Result<Unit> = try {
-        DebugLog.d("Uninstall", "Via Shizuku: pm uninstall $packageName")
+    private fun uninstallViaShizuku(packageName: String, keepData: Boolean): Result<Unit> = try {
+        DebugLog.d("Uninstall", "Via Shizuku: pm uninstall keepData=$keepData $packageName")
         val clazz = Class.forName("rikka.shizuku.Shizuku")
         val method = clazz.getDeclaredMethod(
             "newProcess",
@@ -58,7 +78,7 @@ object UninstallHelper {
         method.isAccessible = true
         val process = method.invoke(
             null,
-            arrayOf("pm", "uninstall", packageName),
+            if (keepData) arrayOf("pm", "uninstall", "-k", packageName) else arrayOf("pm", "uninstall", packageName),
             null,
             null
         ) as rikka.shizuku.ShizukuRemoteProcess

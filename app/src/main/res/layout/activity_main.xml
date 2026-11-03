@@ -26,6 +26,12 @@
 
     </com.google.android.material.appbar.MaterialToolbar>
 
+    <include
+        android:id="@+id/export_banner"
+        layout="@layout/view_export_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -46,7 +52,7 @@
                 style="@style/Widget.VInstall.Row"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="56dp">
+                android:minHeight="?attr/vTouch56">
 
                 <View
                     android:id="@+id/install_mode_dot"
@@ -150,6 +156,7 @@
                             android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:contentDescription="@string/progress_desc"
                             android:id="@+id/progress_loading"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -364,7 +371,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="end"
                             android:layout_marginTop="12dp"
-                            android:minHeight="48dp"
+                            android:minHeight="?attr/vTouch48"
                             android:text="@string/select_splits"
                             android:visibility="gone" />
                     </LinearLayout>
@@ -389,6 +396,7 @@
                     android:visibility="gone" />
 
                 <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:contentDescription="@string/progress_desc"
                     android:id="@+id/progress_bar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -405,6 +413,7 @@
 
                     <TextView
                         android:id="@+id/text_status"
+                        android:accessibilityLiveRegion="polite"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -417,7 +426,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:minHeight="48dp"
+                        android:minHeight="?attr/vTouch48"
                         android:text="@string/cancel"
                         android:visibility="gone" />
                 </LinearLayout>
@@ -526,7 +535,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:minHeight="52dp"
+            android:minHeight="?attr/vTouch52"
             android:text="@string/select_file" />
 
         <com.google.android.material.button.MaterialButton
@@ -536,7 +545,7 @@
             android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:enabled="false"
-            android:minHeight="52dp"
+            android:minHeight="?attr/vTouch52"
             android:text="@string/install" />
     </LinearLayout>
     </LinearLayout>

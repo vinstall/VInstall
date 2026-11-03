@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
     android:gravity="center_vertical"
-    android:minHeight="64dp"
+    android:minHeight="?attr/vTouch64"
     android:orientation="horizontal"
     android:paddingStart="4dp"
     android:paddingTop="8dp"

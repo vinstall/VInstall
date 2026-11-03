@@ -3,6 +3,8 @@ package com.vinstall.alwiz
 import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
 import com.vinstall.alwiz.settings.AppSettings
+import com.vinstall.alwiz.timeline.AppTimelineManager
+import com.vinstall.alwiz.ui.DisplayScale
 import com.vinstall.alwiz.util.CrashHandler
 import com.vinstall.alwiz.util.FileUtil
 import com.vinstall.alwiz.util.NotificationHelper
@@ -17,6 +19,8 @@ class App : Application() {
         CrashHandler.install(this)
         NotificationHelper.createChannel(this)
         applyTheme(AppSettings.getTheme(this))
+        DisplayScale.install(this)
+        AppTimelineManager.syncAsync(this)
         if (AppSettings.isAutoClearCache(this)) {
             val startedAt = System.currentTimeMillis()
             CoroutineScope(Dispatchers.IO).launch { FileUtil.clearStaleCache(this@App, startedAt) }

@@ -13,6 +13,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.color.MaterialColors
 import com.vinstall.alwiz.R
 import com.vinstall.alwiz.databinding.BottomSheetConfirmBinding
+import com.vinstall.alwiz.model.CallerInfo
 
 class ConfirmationBottomSheet : BottomSheetDialogFragment() {
 
@@ -25,7 +26,8 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
         val installedVersionName: String?,
         val installedVersionCode: Long?,
         val minSdk: Int = 0,
-        val targetSdk: Int = 0
+        val targetSdk: Int = 0,
+        val source: CallerInfo? = null
     )
 
     private var _binding: BottomSheetConfirmBinding? = null
@@ -64,6 +66,11 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
         if (info != null) {
             binding.layoutAppInfo.isVisible = true
             binding.textMessage.isVisible = false
+
+            val source = info.source
+            binding.layoutSource.root.isVisible = source != null
+            binding.dividerSource.isVisible = source != null
+            if (source != null) bindCallerRow(binding.layoutSource.root, source)
 
             if (info.icon != null) {
                 binding.imageAppIcon.setImageBitmap(info.icon)
@@ -110,10 +117,10 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
         binding.btnPositive.setOnClickListener {
             confirmed = true
             onConfirm?.invoke()
-            if (!keepOpenAfterConfirm) dismiss()
+            if (!keepOpenAfterConfirm) dismissAllowingStateLoss()
         }
 
-        binding.btnNegative.setOnClickListener { dismiss() }
+        binding.btnNegative.setOnClickListener { dismissAllowingStateLoss() }
 
         binding.btnPositive.applyPressAnimation()
         binding.btnNegative.applyPressAnimation()
@@ -121,6 +128,7 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
         if (savedInstanceState == null) {
             listOf<View>(
                 binding.textTitle,
+                binding.layoutSource.root,
                 binding.layoutAppInfo,
                 binding.textMessage,
                 binding.btnPositive,
@@ -136,7 +144,7 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
     fun setInstalling(step: String, progress: Float) {
         val b = _binding ?: return
         if (!b.layoutProgress.isVisible) {
-            android.transition.TransitionManager.beginDelayedTransition(b.root)
+            beginDelayedTransitionIfAllowed(b.root)
         }
         b.btnPositive.isVisible = false
         b.btnNegative.isVisible = false
@@ -215,7 +223,7 @@ class ConfirmationBottomSheet : BottomSheetDialogFragment() {
                 this.appInstallInfo = appInstallInfo
                 this.onDismissed = onDismissed
                 this.onConfirm = onConfirm
-                show(fragmentManager, TAG)
+                showSafely(fragmentManager, TAG)
             }
         }
     }

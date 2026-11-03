@@ -1,12 +1,16 @@
 package com.vinstall.alwiz.backup
 
+import com.vinstall.alwiz.ui.showToast
+import com.vinstall.alwiz.ui.exportStatusText
+import com.vinstall.alwiz.ui.StatusIcon
+import com.vinstall.alwiz.ui.showStatusIcon
+import com.vinstall.alwiz.ui.statusOk
 import android.os.Bundle
 import android.os.Environment
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import com.vinstall.alwiz.ui.ScaledActivity
 import androidx.core.view.isVisible
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.Lifecycle
@@ -26,7 +30,7 @@ import com.vinstall.alwiz.ui.applySystemBarInsets
 import kotlinx.coroutines.launch
 import java.io.File
 
-class BackupActivity : AppCompatActivity() {
+class BackupActivity : ScaledActivity() {
 
     private lateinit var binding: ActivityBackupBinding
     private val listViewModel: AppManagerViewModel by viewModels()
@@ -120,6 +124,7 @@ class BackupActivity : AppCompatActivity() {
             com.google.android.material.R.attr.colorOnSurface
         )
         var color = normal
+        var icon: StatusIcon? = null
         when (state) {
             is BackupState.Idle -> {
                 binding.layoutBackupStatus.isVisible = false
@@ -127,26 +132,30 @@ class BackupActivity : AppCompatActivity() {
             }
             is BackupState.Running -> {
                 binding.progressBackup.isVisible = true
-                binding.textBackupStatus.text = state.step
+                binding.progressBackup.setProgressCompat(state.percent, true)
+                binding.textBackupStatus.text = exportStatusText(state)
             }
             is BackupState.Done -> {
                 binding.progressBackup.isVisible = false
                 binding.textBackupStatus.text = getString(R.string.backup_success, state.path)
-                color = androidx.core.content.ContextCompat.getColor(this, R.color.status_ok)
+                color = statusOk(this)
+                icon = StatusIcon.SUCCESS
             }
             is BackupState.Error -> {
                 binding.progressBackup.isVisible = false
                 binding.textBackupStatus.text = getString(R.string.backup_failed, state.message)
                 color = MaterialColors.getColor(binding.root, androidx.appcompat.R.attr.colorError)
+                icon = StatusIcon.ERROR
             }
         }
         binding.textBackupStatus.setTextColor(color)
+        binding.textBackupStatus.showStatusIcon(icon, color)
         binding.layoutBackupStatus.isVisible = true
     }
 
     private fun beginExport(app: AppInfo) {
         if (backupViewModel.isRunning()) {
-            Toast.makeText(this, R.string.export_in_progress, Toast.LENGTH_SHORT).show()
+            showToast(this, R.string.export_in_progress)
             return
         }
         ExportDialog.show(this, app) { password ->

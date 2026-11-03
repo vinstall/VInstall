@@ -4,6 +4,10 @@
 
 -keep class com.vinstall.alwiz.model.** { *; }
 -keep class com.vinstall.alwiz.parser.** { *; }
+-keep class com.vinstall.alwiz.timeline.TimelineNode { *; }
+-keep class com.vinstall.alwiz.timeline.SnapshotEntry { *; }
+-keep enum com.vinstall.alwiz.timeline.** { *; }
+-keep class com.vinstall.alwiz.timeline.TreeGuideView { <init>(...); }
 -keep class com.google.gson.reflect.TypeToken { *; }
 -keep class * extends com.google.gson.reflect.TypeToken
 -keep class * implements com.google.gson.JsonSerializer { *; }
@@ -36,3 +40,4 @@
 -dontwarn java.lang.invoke.StringConcatFactory
 -dontwarn org.jetbrains.annotations.**
 -dontwarn javax.annotation.**
+-keep class com.vinstall.alwiz.ui.MarqueeViewInflater { <init>(); }

@@ -1,5 +1,6 @@
 package com.vinstall.alwiz.appmanager
 
+import com.vinstall.alwiz.util.VersionLabel
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -34,7 +35,7 @@ class AppListAdapter(
             binding.textAppName.text = app.label
             binding.textPackageName.text = app.packageName
 
-            val meta = mutableListOf("v${app.versionName}", FileUtil.formatSize(app.sizeBytes))
+            val meta = mutableListOf(VersionLabel.format(app.versionName), FileUtil.formatSize(app.sizeBytes))
             if (app.isSplitApp) meta += context.getString(R.string.tag_split)
             if (app.isSystemApp) meta += context.getString(R.string.tag_system)
             binding.textMeta.text = meta.joinToString(context.getString(R.string.separator_dot))

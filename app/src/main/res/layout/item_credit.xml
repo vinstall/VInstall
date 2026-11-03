@@ -33,6 +33,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:minHeight="48dp"
+        android:minHeight="?attr/vTouch48"
         android:text="@string/credits_license_short" />
 </LinearLayout>

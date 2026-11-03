@@ -38,7 +38,8 @@ object XapkInstaller {
 
             if (manifest.isSplitApkBundle()) {
                 onStep("Installing split APKs...")
-                val apkFiles = manifest.splitApks!!.mapNotNull { entry ->
+                val orderedSplits = manifest.splitApks!!.sortedBy { if (it.id.equals("base", ignoreCase = true)) 0 else 1 }
+                val apkFiles = orderedSplits.mapNotNull { entry ->
                     val f = File(cacheDir, File(entry.file).name)
                     if (f.exists()) f else {
                         DebugLog.e("XapkInstaller", "Split APK not found in cache: ${entry.file}")

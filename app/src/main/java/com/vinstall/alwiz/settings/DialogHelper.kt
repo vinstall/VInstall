@@ -12,7 +12,12 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.vinstall.alwiz.R
 import com.vinstall.alwiz.ui.ChoiceBottomSheet
 import com.vinstall.alwiz.ui.ConfirmationBottomSheet
+import com.vinstall.alwiz.ui.ContinueCountdown
+import com.vinstall.alwiz.ui.applyDangerStyle
+import com.vinstall.alwiz.model.CallerInfo
 import com.vinstall.alwiz.ui.InfoBottomSheet
+import com.vinstall.alwiz.ui.UntrustedCallerBottomSheet
+import com.vinstall.alwiz.ui.bindCallerRow
 
 class DialogController(
     private val onDismiss: () -> Unit,
@@ -24,6 +29,75 @@ class DialogController(
 
 object DialogHelper {
 
+    fun showUntrustedCaller(
+        activity: FragmentActivity,
+        caller: CallerInfo,
+        behavior: String,
+        onContinue: () -> Unit,
+        onBlock: (BlockDuration) -> Unit,
+        onDismissed: () -> Unit,
+    ): DialogController {
+        return when (AppSettings.getDialogStyle(activity)) {
+            DialogStyle.BOTTOM_SHEET -> {
+                val sheet = UntrustedCallerBottomSheet.show(
+                    fragmentManager = activity.supportFragmentManager,
+                    caller = caller,
+                    behavior = behavior,
+                    onContinue = onContinue,
+                    onBlock = onBlock,
+                    onDismissed = onDismissed,
+                )
+                DialogController(onDismiss = { sheet.dismissQuietly() })
+            }
+            DialogStyle.ALERT_DIALOG -> {
+                val view = activity.layoutInflater.inflate(R.layout.dialog_untrusted, null)
+                bindCallerRow(view.findViewById(R.id.layout_caller), caller)
+                view.findViewById<TextView>(R.id.text_behavior).text = behavior
+
+                val builder = MaterialAlertDialogBuilder(activity)
+                    .setTitle(R.string.untrusted_title)
+                    .setView(view)
+                    .setPositiveButton(R.string.untrusted_continue) { _, _ -> onContinue() }
+                    .setNegativeButton(R.string.cancel) { _, _ -> onDismissed() }
+                    .setOnCancelListener { onDismissed() }
+                if (caller.packageName.isNotEmpty()) {
+                    builder.setNeutralButton(R.string.untrusted_block) { _, _ ->
+                        val durations = BlockDuration.values()
+                        MaterialAlertDialogBuilder(activity)
+                            .setTitle(R.string.untrusted_block_title)
+                            .setItems(durations.map { activity.getString(it.labelRes) }.toTypedArray()) { _, which ->
+                                onBlock(durations[which])
+                            }
+                            .setNegativeButton(R.string.cancel) { _, _ -> onDismissed() }
+                            .setOnCancelListener { onDismissed() }
+                            .show()
+                    }
+                }
+                val delay = AppSettings.getUntrustedContinueDelay(activity)
+                var countdown: ContinueCountdown? = null
+                builder.setOnDismissListener { countdown?.cancel() }
+                val dialog = builder.create()
+                dialog.setOnShowListener {
+                    val positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    positive.applyDangerStyle()
+                    if (delay > 0) {
+                        positive.isEnabled = false
+                        countdown = ContinueCountdown(
+                            seconds = delay,
+                            onTick = { positive.text = activity.getString(R.string.untrusted_continue_countdown, it) },
+                            onFinish = {
+                                positive.text = activity.getString(R.string.untrusted_continue)
+                                positive.isEnabled = true
+                            }
+                        ).also { it.start() }
+                    }
+                }
+                dialog.show()
+                DialogController(onDismiss = { if (dialog.isShowing) dialog.dismiss() })
+            }
+        }
+    }
+
     fun showInfo(
         activity: FragmentActivity,
         title: String,
@@ -33,6 +107,8 @@ object DialogHelper {
         monospace: Boolean = false,
         primaryLabel: String? = null,
         onPrimary: (() -> Unit)? = null,
+        appInfo: CallerInfo? = null,
+        caller: CallerInfo? = null,
     ) {
         when (AppSettings.getDialogStyle(activity)) {
             DialogStyle.BOTTOM_SHEET -> {
@@ -45,6 +121,8 @@ object DialogHelper {
                     monospace = monospace,
                     primaryLabel = primaryLabel,
                     onPrimary = onPrimary,
+                    appInfo = appInfo,
+                    caller = caller,
                 )
             }
             DialogStyle.ALERT_DIALOG -> {
@@ -124,7 +202,7 @@ object DialogHelper {
                     onConfirm = onConfirm,
                 )
                 DialogController(
-                    onDismiss = { if (sheet.isAdded) sheet.dismiss() },
+                    onDismiss = { if (sheet.isAdded) sheet.dismissAllowingStateLoss() },
                     onUpdateProgress = { step, progress -> sheet.setInstalling(step, progress) }
                 )
             }
@@ -146,6 +224,12 @@ object DialogHelper {
                     val textPackage = view.findViewById<TextView>(R.id.text_package_name)
                     val textVersion = view.findViewById<TextView>(R.id.text_version_info)
                     val textSdk = view.findViewById<TextView>(R.id.text_sdk_info)
+                    val sourceRow = view.findViewById<View>(R.id.layout_source)
+                    val sourceDivider = view.findViewById<View>(R.id.divider_source)
+                    val source = appInstallInfo.source
+                    sourceRow.isVisible = source != null
+                    sourceDivider.isVisible = source != null
+                    if (source != null) bindCallerRow(sourceRow, source)
                     progressLayout = view.findViewById(R.id.layout_progress)
                     progressBar = view.findViewById(R.id.progress_install)
                     progressText = view.findViewById(R.id.text_progress_status)

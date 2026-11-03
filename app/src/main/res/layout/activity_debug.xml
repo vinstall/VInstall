@@ -63,7 +63,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:minHeight="48dp"
+            android:minHeight="?attr/vTouch48"
             android:text="@string/clear_log" />
 
         <com.google.android.material.button.MaterialButton
@@ -72,7 +72,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:minHeight="48dp"
+            android:minHeight="?attr/vTouch48"
             android:text="@string/copy_log" />
     </LinearLayout>
     </LinearLayout>

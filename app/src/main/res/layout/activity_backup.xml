@@ -71,6 +71,7 @@
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:contentDescription="@string/loading_desc"
             android:id="@+id/progress_bar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -108,11 +109,12 @@
             android:padding="16dp">
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:contentDescription="@string/progress_desc"
                 android:id="@+id/progress_backup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:indeterminate="true"
+                android:indeterminate="false"
                 android:visibility="gone"
                 app:trackCornerRadius="4dp" />
 

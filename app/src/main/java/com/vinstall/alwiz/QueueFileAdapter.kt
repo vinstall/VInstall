@@ -1,5 +1,6 @@
 package com.vinstall.alwiz
 
+import com.vinstall.alwiz.util.VersionLabel
 import android.graphics.Bitmap
 import android.graphics.Typeface
 import android.net.Uri
@@ -9,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
@@ -58,9 +60,19 @@ class QueueFileAdapter(
         val item = items[position]
         val context = holder.itemView.context
 
-        holder.textNumber.text = (position + 1).toString()
         val isActive = locked && position == activeIndex
         val isDone = locked && activeIndex >= 0 && position < activeIndex
+        holder.textNumber.text = if (isDone) "✓" else (position + 1).toString()
+        holder.textNumber.contentDescription = if (isDone) (position + 1).toString() else null
+        ViewCompat.setStateDescription(
+            holder.itemView,
+            when {
+                isDone -> context.getString(R.string.queue_state_done)
+                isActive -> context.getString(R.string.queue_state_active)
+                locked -> context.getString(R.string.queue_state_waiting)
+                else -> null
+            }
+        )
         holder.textNumber.setTypeface(null, if (isActive) Typeface.BOLD else Typeface.NORMAL)
         holder.textNumber.setTextColor(
             MaterialColors.getColor(
@@ -81,7 +93,7 @@ class QueueFileAdapter(
 
         val metaParts = mutableListOf<String>()
         if (item.packageName.isNotEmpty()) metaParts += item.packageName
-        if (item.versionName.isNotEmpty()) metaParts += "v${item.versionName}"
+        if (item.versionName.isNotEmpty()) metaParts += VersionLabel.format(item.versionName)
         metaParts += item.formatLabel
         if (item.fileSize > 0) metaParts += FileUtil.formatSize(item.fileSize)
         holder.textMeta.text = metaParts.joinToString(" · ")

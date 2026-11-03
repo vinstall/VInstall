@@ -6,7 +6,7 @@
     android:clickable="true"
     android:focusable="true"
     android:gravity="center_vertical"
-    android:minHeight="56dp"
+    android:minHeight="?attr/vTouch56"
     android:orientation="horizontal"
     android:paddingStart="12dp"
     android:paddingEnd="8dp">

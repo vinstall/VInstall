@@ -29,4 +29,5 @@
     <color name="status_ok_container">#C8F0D2</color>
     <color name="status_warn">#8A5100</color>
     <color name="status_warn_container">#FFDCBE</color>
+    <color name="status_blocked">#7A3E9D</color>
 </resources>

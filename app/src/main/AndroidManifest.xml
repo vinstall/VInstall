@@ -6,6 +6,9 @@
 
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <uses-permission android:name="android.permission.DELETE_PACKAGES" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
@@ -49,7 +52,7 @@
             android:exported="true"
             android:theme="@style/Theme.UniversalInstaller.Transparent"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"
-            android:launchMode="singleTop">
+            android:taskAffinity="">
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -118,6 +121,16 @@
             android:label="@string/app_detail" />
 
         <activity
+            android:name=".timeline.AppTimelineActivity"
+            android:exported="false"
+            android:label="@string/timeline_title" />
+
+        <activity
+            android:name=".blocked.BlockedAppsActivity"
+            android:exported="false"
+            android:label="@string/blocked_apps_title" />
+
+        <activity
             android:name=".backup.BackupActivity"
             android:exported="false"
             android:label="@string/backup" />
@@ -172,6 +185,16 @@
                 <action android:name="com.vinstall.alwiz.INSTALL_STATUS" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".installer.SilentInstallService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name=".backup.ExportService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

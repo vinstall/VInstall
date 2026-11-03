@@ -30,4 +30,5 @@
     <color name="status_ok_container">#0B3B1D</color>
     <color name="status_warn">#FFB870</color>
     <color name="status_warn_container">#4A2800</color>
+    <color name="status_blocked">#D9A8F0</color>
 </resources>

@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.color.MaterialColors
+import com.vinstall.alwiz.R
 import com.vinstall.alwiz.databinding.ItemCrashBinding
 import com.vinstall.alwiz.model.CrashEntry
 import com.vinstall.alwiz.ui.applyPressAnimation
@@ -37,6 +38,8 @@ class CrashLogAdapter(
         )
 
         b.root.setOnClickListener { onItemClick(entry) }
+        b.btnDelete.contentDescription =
+            b.root.context.getString(R.string.crash_log_delete_item_desc, entry.exceptionType)
         b.btnDelete.setOnClickListener { onDeleteClick(entry) }
     }
 

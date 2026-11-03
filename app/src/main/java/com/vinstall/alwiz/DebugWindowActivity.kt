@@ -1,13 +1,13 @@
 package com.vinstall.alwiz
 
+import com.vinstall.alwiz.ui.showToast
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
+import com.vinstall.alwiz.ui.ScaledActivity
 import androidx.lifecycle.lifecycleScope
 import com.vinstall.alwiz.databinding.ActivityDebugBinding
 import com.vinstall.alwiz.ui.FloatingNav
@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-class DebugWindowActivity : AppCompatActivity() {
+class DebugWindowActivity : ScaledActivity() {
 
     private lateinit var binding: ActivityDebugBinding
 
@@ -62,7 +62,7 @@ class DebugWindowActivity : AppCompatActivity() {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("VInstall Debug Log", DebugLog.getAll())
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(this, getString(R.string.log_copied), Toast.LENGTH_SHORT).show()
+            showToast(this, getString(R.string.log_copied))
         }
     }
 

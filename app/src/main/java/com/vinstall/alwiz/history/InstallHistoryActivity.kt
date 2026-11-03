@@ -1,11 +1,11 @@
 package com.vinstall.alwiz.history
 
+import com.vinstall.alwiz.ui.showToast
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
+import com.vinstall.alwiz.ui.ScaledActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -13,10 +13,13 @@ import com.vinstall.alwiz.R
 import com.vinstall.alwiz.databinding.ActivityInstallHistoryBinding
 import com.vinstall.alwiz.model.HistoryStatus
 import com.vinstall.alwiz.model.InstallHistoryEntry
+import com.vinstall.alwiz.settings.AppSettings
 import com.vinstall.alwiz.settings.DialogHelper
+import com.vinstall.alwiz.settings.DialogStyle
 import com.vinstall.alwiz.ui.FloatingNav
 import com.vinstall.alwiz.ui.applySystemBarInsets
 import com.vinstall.alwiz.ui.bindFloatingNav
+import com.vinstall.alwiz.util.CallerResolver
 import com.vinstall.alwiz.util.FileUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -25,7 +28,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class InstallHistoryActivity : AppCompatActivity() {
+class InstallHistoryActivity : ScaledActivity() {
 
     private lateinit var binding: ActivityInstallHistoryBinding
     private lateinit var adapter: InstallHistoryAdapter
@@ -77,7 +80,7 @@ class InstallHistoryActivity : AppCompatActivity() {
                 entries.clear()
                 adapter.notifyDataSetChanged()
                 updateEmptyState()
-                Toast.makeText(this, getString(R.string.history_cleared), Toast.LENGTH_SHORT).show()
+                showToast(this, getString(R.string.history_cleared))
             }
         )
     }
@@ -113,6 +116,7 @@ class InstallHistoryActivity : AppCompatActivity() {
             HistoryStatus.SUCCESS -> getString(R.string.history_status_success)
             HistoryStatus.FAILED -> getString(R.string.history_status_failed)
             HistoryStatus.CANCELLED -> getString(R.string.history_status_cancelled)
+            HistoryStatus.BLOCKED -> getString(R.string.history_status_blocked)
         }
 
         val durationText = if (entry.durationMs < 1000) {
@@ -121,9 +125,14 @@ class InstallHistoryActivity : AppCompatActivity() {
             String.format(Locale.getDefault(), "%.1f s", entry.durationMs / 1000.0)
         }
 
+        val bottomSheet = AppSettings.getDialogStyle(this) == DialogStyle.BOTTOM_SHEET
+        val source = entry.sourcePackage?.takeIf { it.isNotEmpty() }
         val detail = buildString {
             appendLine("${getString(R.string.history_detail_status)}: $statusLabel")
             appendLine("${getString(R.string.history_detail_package)}: ${entry.packageName.ifEmpty { "-" }}")
+            source?.takeIf { !bottomSheet }?.let { source ->
+                appendLine("${getString(R.string.history_detail_source)}: ${CallerResolver.labelOf(this@InstallHistoryActivity, source)} ($source)")
+            }
             appendLine("${getString(R.string.history_detail_version)}: ${entry.versionName.ifEmpty { "-" }}")
             appendLine("${getString(R.string.history_detail_format)}: ${entry.format}")
             appendLine("${getString(R.string.history_detail_size)}: ${FileUtil.formatSize(entry.fileSize)}")
@@ -139,9 +148,13 @@ class InstallHistoryActivity : AppCompatActivity() {
 
         DialogHelper.showInfo(
             activity = this,
-            title = entry.appLabel.ifEmpty { entry.packageName },
+            title = entry.displayTitle(this),
             body = detail,
             closeLabel = getString(R.string.crash_log_close),
+            appInfo = CallerResolver.resolve(this, entry.packageName.ifEmpty { null }, false),
+            caller = source?.let {
+                CallerResolver.resolve(this, it, it in AppSettings.getTrustedCallers(this))
+            },
         )
     }
 

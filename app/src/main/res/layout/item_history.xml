@@ -10,7 +10,7 @@
     android:clickable="true"
     android:focusable="true"
     android:gravity="center_vertical"
-    android:minHeight="72dp"
+    android:minHeight="?attr/vTouch72"
     android:orientation="horizontal"
     android:paddingStart="16dp"
     android:paddingTop="8dp"
@@ -91,8 +91,8 @@
 
     <ImageButton
         android:id="@+id/btn_delete"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="?attr/vTouch48"
+        android:layout_height="?attr/vTouch48"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/history_delete_desc"
         android:src="@drawable/ic_delete" />
