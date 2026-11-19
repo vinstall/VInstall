@@ -1,4 +1,4 @@
-# VInstall
+./gradlew assembleDebug# VInstall
 
 A minimal Android application for installing APK, XAPK, APKS, APKM, APKV, and ZIP packages, with batch install, install history, a built-in app manager with per-app timeline, backup, uninstaller, and silent install for trusted apps.
 
